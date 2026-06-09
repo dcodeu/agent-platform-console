@@ -23,6 +23,7 @@ import { SseProvider } from "./data/sse.ts";
 import { useTabRouter } from "./tabs/use-tab-router.ts";
 import type { TabKey } from "./tabs/tab-registry.ts";
 import { OverviewTab } from "./tabs/OverviewTab.tsx";
+import { NocTab } from "./tabs/NocTab.tsx";
 import { SpendTab } from "./tabs/SpendTab.tsx";
 import { AgentsTab } from "./tabs/AgentsTab.tsx";
 import { IMessageTab } from "./tabs/IMessageTab.tsx";
@@ -44,6 +45,7 @@ if (!container) {
 
 const TAB_COMPONENTS: Record<TabKey, () => JSX.Element> = {
   overview: OverviewTab,
+  noc: NocTab,
   apm: APMTab,
   logs: LogsTab,
   spend: SpendTab,

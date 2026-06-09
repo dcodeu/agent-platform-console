@@ -8,6 +8,7 @@ import type { IconName } from "../icon-sprite.tsx";
 
 export type TabKey =
   | "overview"
+  | "noc"
   | "apm"
   | "logs"
   | "spend"
@@ -24,6 +25,7 @@ export interface TabDef {
 
 export const TABS: readonly TabDef[] = [
   { key: "overview", label: "Overview", icon: "layout-dashboard" },
+  { key: "noc", label: "NOC", icon: "radio" },
   { key: "apm", label: "App health", icon: "trending-up" },
   { key: "logs", label: "Logs", icon: "more-horizontal" },
   { key: "spend", label: "Spend", icon: "dollar-sign" },
