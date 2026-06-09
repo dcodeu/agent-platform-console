@@ -27,7 +27,8 @@ jobs:
             git fetch origin
             git reset --hard origin/main
             npm ci --prefer-offline
-            # no build step detected in package.json
-            sudo systemctl restart agent-platform-console.service
-            systemctl is-active agent-platform-console.service
+            # no build step (server runs tsx directly)
+            export XDG_RUNTIME_DIR=/run/user/$(id -u)
+            systemctl --user restart agent-platform-console.service
+            systemctl --user is-active agent-platform-console.service
           '
