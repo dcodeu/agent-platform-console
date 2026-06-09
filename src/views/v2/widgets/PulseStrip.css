@@ -1,0 +1,74 @@
+/* PulseStrip — thin live-vitals rail above every tab. No card chrome:
+   inline pill-pair row with hairline dividers between items. */
+
+.y2-pulse-strip {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 32px;
+  padding: 0 var(--space-md);
+  margin: calc(var(--space-md) * -1) calc(var(--space-md) * -1) 0;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--rule);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.y2-pulse-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.y2-pulse-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  position: relative;
+  padding-right: 18px;
+  flex-shrink: 0;
+}
+.y2-pulse-item + .y2-pulse-item::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 12px;
+  background: var(--rule);
+}
+
+.y2-pulse-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.y2-pulse-val {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.y2-pulse-val--attn {
+  color: var(--attn);
+}
+.y2-pulse-val--alert {
+  color: var(--alert);
+}
+
+@media (max-width: 768px) {
+  .y2-pulse-strip {
+    display: none;
+  }
+}
+
+/* Reserve right-side space for the fixed Ticker rail at large viewports —
+   mirrors .y2-page in AppShell.css so the strip aligns with the page gutter. */
+@media (min-width: 1100px) {
+  .y2-pulse-strip {
+    margin-right: calc((320px + 24px) * -1 + var(--space-md));
+    padding-right: calc(320px + 24px + var(--space-md));
+  }
+}

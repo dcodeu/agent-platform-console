@@ -1,0 +1,53 @@
+/* ─── KPI WORKER GRID ──────────────────────────────────── */
+.y2-k-grid .y2-tile-b {
+  padding: 14px 16px;
+}
+.y2-k-grid-workers {
+  display: grid;
+  gap: 4px;
+}
+.y2-k-grid-w {
+  aspect-ratio: 1 / 1;
+  background: var(--accent);
+  border-radius: 3px;
+  display: block;
+}
+.y2-k-grid-quar {
+  background: var(--alert);
+}
+button.y2-k-grid-w-btn {
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 100ms ease, box-shadow 100ms ease, filter 100ms ease;
+}
+button.y2-k-grid-w-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 1px var(--fg-2);
+  filter: brightness(1.1);
+}
+button.y2-k-grid-w-btn:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 1px;
+}
+.y2-k-grid-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 10px;
+  gap: 8px;
+}
+.y2-k-grid-ct {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--fg);
+}
+.y2-k-grid-ct b {
+  color: var(--accent);
+  font-weight: 600;
+}
+.y2-k-grid-quar-lbl {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--alert);
+}

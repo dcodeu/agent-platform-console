@@ -1,0 +1,54 @@
+/* ─── KPI HEADLINE ──────────────────────────────────────── */
+.y2-k-headline .y2-tile-b {
+  padding: 14px 16px;
+}
+.y2-k-headline-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.y2-k-headline-n {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: var(--accent);
+}
+.y2-k-headline-delta {
+  font-size: 10.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--attn-bg);
+  color: var(--attn);
+  font-family: var(--mono);
+  font-weight: 600;
+}
+.y2-k-headline-budget {
+  margin-top: 10px;
+}
+.y2-k-headline-bar {
+  height: 5px;
+  background: var(--bg-2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.y2-k-headline-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+.y2-k-headline-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 5px;
+  font-size: 10.5px;
+  font-family: var(--mono);
+  color: var(--fg-3);
+}
+
+@media (min-width: 1024px) {
+  .y2-k-headline-n {
+    font-size: 30px;
+  }
+}

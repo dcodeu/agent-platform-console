@@ -1,0 +1,66 @@
+{
+  "name": "Agent Platform Console",
+  "short_name": "Agents",
+  "description": "Live operations console for Hermes, Paperclip, and the Hostinger VPS.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0807",
+  "theme_color": "#0a0807",
+  "lang": "en",
+  "categories": ["productivity", "developer", "utilities"],
+  "id": "/?app=agent-platform-console",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Vitals",
+      "short_name": "Vitals",
+      "url": "/?tab=vitals",
+      "description": "Live CPU, memory, disk, and network"
+    },
+    {
+      "name": "Agents",
+      "short_name": "Agents",
+      "url": "/?tab=agents",
+      "description": "Hermes, Paperclip, and Claude proxy status"
+    },
+    {
+      "name": "Tasks",
+      "short_name": "Tasks",
+      "url": "/?tab=tasks",
+      "description": "Active and recent agent tasks"
+    }
+  ]
+}

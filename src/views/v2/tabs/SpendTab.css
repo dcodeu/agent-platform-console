@@ -1,0 +1,24 @@
+.sp-pulse,
+.sp-chart,
+.sp-grid-2,
+.sp-agents {
+  display: grid;
+  gap: var(--space-sm);
+}
+.sp-pulse { grid-template-columns: 1fr 1fr; }
+.sp-chart,
+.sp-grid-2,
+.sp-agents {
+  grid-template-columns: 1fr;
+  margin-top: var(--space-md);
+}
+@media (min-width: 720px) {
+  .sp-pulse { grid-template-columns: repeat(3, 1fr); }
+  .sp-grid-2 { grid-template-columns: 1fr 1fr; }
+}
+.sp-gauge-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0;
+}

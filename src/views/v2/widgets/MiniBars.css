@@ -1,0 +1,21 @@
+.w-minibars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  width: 100%;
+}
+.w-minibars-b {
+  flex: 1 1 0;
+  border-radius: 1.5px 1.5px 0 0;
+  min-width: 2px;
+  transition: height 200ms ease;
+}
+.w-minibars-empty {
+  padding: 12px 0;
+  text-align: center;
+  color: var(--fg-3);
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}

@@ -1,0 +1,185 @@
+/* Overview tab — varied section shapes so the eye scans fast. */
+
+.ov-pulse,
+.ov-flow,
+.ov-breakdown,
+.ov-sys {
+  display: grid;
+  gap: var(--space-sm);
+  margin-top: 0;
+}
+.ov-pulse { grid-template-columns: 1fr 1fr; }
+.ov-flow,
+.ov-breakdown,
+.ov-sys { grid-template-columns: 1fr; margin-top: var(--space-md); }
+
+.ov-timeline-section { margin-top: var(--space-md); }
+
+@media (min-width: 720px) {
+  .ov-pulse { grid-template-columns: repeat(4, 1fr); }
+  .ov-flow { grid-template-columns: 2fr 1fr; }
+  .ov-breakdown { grid-template-columns: 1fr 1fr; }
+  .ov-sys { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Pool tile (inside pulse row) */
+.ov-pool {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ov-pool-n {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.ov-pool-num {
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+.ov-pool-tot {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.ov-pool-grid {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  gap: 3px;
+}
+.ov-pool-sq {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: var(--accent);
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 100ms ease, box-shadow 100ms ease, filter 100ms ease;
+}
+button.ov-pool-sq:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 1px var(--fg-2);
+  filter: brightness(1.1);
+}
+button.ov-pool-sq:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 1px;
+}
+.ov-pool-sq.is-quar { background: var(--alert); }
+
+.ov-flow-single,
+.ov-heatmap-section {
+  margin-top: var(--space-md);
+}
+
+/* Sparkline tile sub */
+.ov-spark-sub {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 6px;
+}
+.ov-spark-sub b { color: var(--fg); font-weight: 500; }
+
+/* Unified timeline */
+.ov-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ov-tl-item {
+  display: grid;
+  grid-template-columns: 80px 1fr auto auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule);
+  border-left: 2px solid transparent;
+}
+.ov-tl-item:last-child { border-bottom: 0; }
+.ov-tl-agent    { border-left-color: var(--accent); }
+.ov-tl-imessage { border-left-color: var(--attn); }
+.ov-tl-alert    { border-left-color: var(--alert); }
+
+.ov-tl-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ov-tl-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ov-tl-title {
+  font-size: 12.5px;
+  color: var(--fg);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ov-tl-sub {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ov-tl-ts {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+}
+
+@media (max-width: 720px) {
+  .ov-tl-item {
+    grid-template-columns: 70px 1fr auto;
+    grid-template-rows: auto auto;
+  }
+  .ov-tl-body { grid-column: 2; }
+  .ov-tl-ts { grid-column: 3; }
+  .ov-tl-item .w-pill { grid-column: 1 / -1; justify-self: start; }
+}
+
+/* Container restarts */
+.ov-restarts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.ov-restarts li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.ov-restarts li:last-child { border-bottom: 0; }
+.ov-restart-name {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--fg);
+  flex: 0 0 auto;
+}
+.ov-restart-img {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+  margin-left: auto;
+}

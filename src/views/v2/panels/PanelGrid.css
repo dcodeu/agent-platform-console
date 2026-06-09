@@ -1,0 +1,53 @@
+/* ─── PANEL GRID (mirrors .y2-kpis breakpoints) ───────────
+   1-col mobile → 2-col tablet → 4-col desktop.
+   Children stretch to the row so heights stay consistent. */
+.y2-panel-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  align-items: stretch;
+}
+
+@media (min-width: 480px) {
+  .y2-panel-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 720px) {
+  .y2-panel-grid {
+    grid-template-columns: repeat(var(--y2-panel-cols, 4), 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .y2-panel-grid {
+    gap: 14px;
+  }
+}
+
+/* Section heading above a panel grid */
+.y2-panel-section {
+  margin-top: 18px;
+}
+.y2-panel-section-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+}
+.y2-panel-section-h h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-2);
+  letter-spacing: -0.005em;
+}
+.y2-panel-section-h .y2-panel-section-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fg-4);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}

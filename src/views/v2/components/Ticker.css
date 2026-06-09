@@ -1,0 +1,257 @@
+/* Ticker — fixed right rail at >=1100px. Hidden on mobile/tablet. */
+
+body.ticker-rail-no-subnav {
+  --ticker-rail-top: calc(var(--safe-top) + var(--topbar-h) + var(--space-lg));
+}
+
+.y2-ticker {
+  position: fixed;
+  right: 0;
+  top: var(--ticker-rail-top);
+  bottom: var(--ticker-rail-bottom);
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100dvh - var(--ticker-rail-top) - var(--ticker-rail-bottom));
+  background: var(--bg-1);
+  border-left: 1px solid var(--rule);
+  z-index: 20;
+  transition: width 250ms ease-out;
+  will-change: width;
+}
+
+/* ─── COLLAPSED PULL-TAB ───────────────────────────────────
+   When collapsed, the rail is a thin 36px vertical strip with a vertical
+   "EVENT TICKER" label and an expand button at the top. */
+.y2-ticker--collapsed {
+  width: 36px;
+  padding: 8px 0;
+  align-items: center;
+}
+
+.y2-ticker-expand {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--fg-2);
+  cursor: pointer;
+  padding: 0;
+  border-radius: 6px;
+}
+.y2-ticker-expand:hover { color: var(--fg); background: var(--bg-2); }
+.y2-ticker-expand:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.y2-ticker-rail-label {
+  margin-top: 12px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);            /* read bottom→top, label upright */
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+}
+.y2-ticker-rail-label .y2-ticker-live-d {
+  /* The live dot inside the rotated label — disable the writing-mode flow */
+  writing-mode: horizontal-tb;
+}
+.y2-ticker-rail-count {
+  font-size: 10px;
+  color: var(--fg-2);
+}
+
+/* ─── COLLAPSE BUTTON (inside the expanded header) ───────── */
+.y2-ticker-collapse {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--fg-3);
+  cursor: pointer;
+  padding: 0;
+  margin-left: 2px;
+  border-radius: 6px;
+}
+.y2-ticker-collapse:hover { color: var(--fg); background: var(--bg-2); }
+.y2-ticker-collapse:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ─── COLLAPSED → main content reclaims the rail's space ──
+   Lives here (alongside the ticker) so the override is co-located with
+   the component that toggles the body class. !important guards against
+   the 1100px media query in AppShell.css that reserves 344px. */
+body.ticker-collapsed .y2-page {
+  padding-right: calc(36px + 16px) !important;
+}
+body.ticker-collapsed .y2-subnav {
+  padding-right: calc(36px + 16px) !important;
+}
+/* The forthcoming category sub-nav from the parallel nav rebuild — keep
+   it in sync without coupling to that component's load order. */
+body.ticker-collapsed .y2-category-subnav {
+  padding-right: calc(36px + 16px) !important;
+}
+
+/* Mobile safety: below 1100px the ticker is hidden, so the body class
+   would never be set, but if persisted state ever leaks across viewport
+   changes we still want mobile to keep its full-width layout. */
+@media (max-width: 1099.98px) {
+  body.ticker-collapsed .y2-page,
+  body.ticker-collapsed .y2-subnav,
+  body.ticker-collapsed .y2-category-subnav {
+    padding-right: 14px !important;
+  }
+}
+
+.y2-ticker-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.y2-ticker-title {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-2);
+}
+
+.y2-ticker-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+
+.y2-ticker-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+.y2-ticker-live-d {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+  animation: y2-ticker-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes y2-ticker-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
+.y2-ticker-rate {
+  color: var(--fg-3);
+}
+
+.y2-ticker-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 0;
+  scrollbar-width: thin;
+}
+
+.y2-ticker-empty {
+  padding: 18px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-3);
+}
+
+.y2-ticker-ev {
+  display: grid;
+  grid-template-columns: 60px 10px 1fr;
+  align-items: start;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid color-mix(in oklch, var(--rule), transparent 60%);
+  animation: y2-ticker-fade-in 220ms ease-out;
+}
+
+@keyframes y2-ticker-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.y2-ticker-ts {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+  padding-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.y2-ticker-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 6px;
+}
+.y2-ticker-dot-info  { background: var(--accent); }
+.y2-ticker-dot-attn  { background: var(--attn); }
+.y2-ticker-dot-alert { background: var(--alert); }
+
+.y2-ticker-body {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.y2-ticker-text {
+  font-size: 12.5px;
+  color: var(--fg);
+  line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.y2-ticker-sub {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

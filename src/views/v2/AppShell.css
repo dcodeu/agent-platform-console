@@ -1,0 +1,160 @@
+/* ─── TOPBAR ─────────────────────────────────────────────── */
+.y2-topbar {
+  height: var(--topbar-h);
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  padding-top: var(--safe-top);
+}
+.y2-hamburger {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--fg-2);
+  border: 1px solid var(--rule);
+  background: var(--bg-2);
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+.y2-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-size: 15px;
+}
+.y2-brand-g {
+  width: 26px;
+  height: 26px;
+  background: var(--accent);
+  color: var(--bg-0);
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-weight: 800;
+  font-size: 13px;
+}
+.y2-brand-name {
+  display: none;
+}
+.y2-search {
+  display: none;
+}
+.y2-health {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  font-size: 11.5px;
+  color: var(--accent);
+  font-family: var(--mono);
+}
+.y2-health-d {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: y2-pulse 2s ease-in-out infinite;
+}
+.y2-me {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+@keyframes y2-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ─── PAGE ──────────────────────────────────────────────── */
+.y2-page {
+  display: grid;
+  padding: var(--space-md) var(--space-md)
+          calc(var(--bnav-h) + var(--safe-bottom) + var(--space-lg));
+  gap: var(--space-md);
+}
+
+/* ─── BREAKPOINTS ──────────────────────────────────────── */
+@media (min-width: 1024px) {
+  .y2-brand-name {
+    display: inline;
+  }
+  .y2-hamburger {
+    display: none;
+  }
+  .y2-search {
+    display: flex;
+    margin-left: auto;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-2);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 5px 10px;
+    min-width: 280px;
+    color: var(--fg-3);
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+  }
+  .y2-search:hover {
+    border-color: var(--rule-hi);
+  }
+  .y2-search input {
+    background: transparent;
+    border: 0;
+    color: var(--fg);
+    outline: none;
+    flex: 1;
+    font-family: var(--sans);
+    font-size: 12.5px;
+    min-width: 0;
+  }
+  .y2-search .y2-search-placeholder {
+    flex: 1;
+    color: var(--fg-3);
+    font-size: 12.5px;
+  }
+  .y2-kbd {
+    padding: 2px 6px;
+    font-size: 10.5px;
+    background: var(--bg-3);
+    border-radius: 4px;
+    font-family: var(--mono);
+    color: var(--fg-2);
+  }
+  .y2-health {
+    margin-left: 0;
+  }
+  .y2-page {
+    padding: var(--space-md) var(--space-lg) var(--space-lg);
+    gap: var(--space-md);
+  }
+}
+/* Reserve right-side space for the fixed Ticker rail. Placed AFTER the
+   1024px desktop override so it wins the cascade at viewports >= 1100px. */
+@media (min-width: 1100px) {
+  .y2-page {
+    padding-right: calc(320px + 24px);
+  }
+}

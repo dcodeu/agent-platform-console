@@ -1,0 +1,37 @@
+{
+  "_tokens-!~{001}~.js": {
+    "file": "tokens.css",
+    "src": "_tokens-!~{001}~.js"
+  },
+  "_tokens-Dzx8TrSz.js": {
+    "file": "chunks/tokens-Dzx8TrSz.js",
+    "name": "tokens",
+    "css": [
+      "tokens.css"
+    ]
+  },
+  "src/views/v2/main.tsx": {
+    "file": "main.js",
+    "name": "main",
+    "src": "src/views/v2/main.tsx",
+    "isEntry": true,
+    "imports": [
+      "_tokens-Dzx8TrSz.js"
+    ],
+    "css": [
+      "main.css"
+    ]
+  },
+  "src/views/v2/wall/main.tsx": {
+    "file": "wall.js",
+    "name": "wall",
+    "src": "src/views/v2/wall/main.tsx",
+    "isEntry": true,
+    "imports": [
+      "_tokens-Dzx8TrSz.js"
+    ],
+    "css": [
+      "wall.css"
+    ]
+  }
+}

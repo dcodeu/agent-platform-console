@@ -1,0 +1,91 @@
+/* Shared chrome for native widgets. Mirrors .y2-tile but adds slots and
+   coral-tinted error/empty states. */
+
+.w-card {
+  background: var(--bg-1);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.w-card.w-card-error {
+  border-color: var(--attn-line);
+  background: linear-gradient(0deg, var(--attn-bg), var(--attn-bg)), var(--bg-1);
+}
+.w-card-h {
+  padding: 10px 13px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--rule);
+}
+.w-card-h h3 {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.35;
+  color: var(--fg);
+}
+.w-card-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.w-card-src {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.w-card-src::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 1.5px;
+  background: var(--accent);
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+.w-card-b {
+  padding: 12px 14px;
+  flex: 1;
+}
+.w-card-b.w-card-b-flush {
+  padding: 0;
+}
+.w-card-f {
+  padding: 8px 13px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.w-card-loading {
+  padding: 20px 14px;
+  color: var(--fg-3);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+.w-card-error-msg {
+  padding: 20px 14px;
+  color: var(--attn);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: center;
+}

@@ -1,0 +1,1135 @@
+import type { Snapshot } from "../lib/snapshot.ts";
+import { escape, bytes, bytesPerSec, pct, ago, stamp, sparkline, friendlyDate, bytesOf, friendlyDuration, titleCase } from "./format.ts";
+import { icon } from "./icons.ts";
+
+export function renderDashboard(s: Snapshot, buildId = "dev"): string {
+  return layout({
+    title: "Agent Platform",
+    buildId,
+    body: `
+${renderSidebar(s)}
+<div class="page">
+  ${renderAlertsBanner()}
+  ${renderAppBar(s)}
+  ${renderServerBar(s)}
+  ${renderCostStrip()}
+  <main class="app" id="app">
+    ${renderTabPanel("overview", true, renderOverview(s))}
+    ${renderTabPanel("agents", false, renderAgents(s) + renderCodexPool(s))}
+    ${renderTabPanel("vps", false, renderVpsTab(s))}
+    ${renderTabPanel("tasks", false, renderTasks(s))}
+    ${renderTabPanel("more", false, renderMore(s))}
+  </main>
+</div>
+${renderBottomNav()}
+${renderInstallPrompt()}
+${renderRefreshHint()}
+${renderCommandPalette()}
+`,
+  });
+}
+
+function renderSidebar(s: Snapshot): string {
+  const overall = healthSummary(s);
+  const sidebarIcons: Record<string, string> = {
+    overview: icon("activity", 18),
+    agents:   icon("bot", 18),
+    vps:      icon("server", 18),
+    tasks:    icon("list-checks", 18),
+    more:     icon("more-horizontal", 18),
+  };
+  return `
+<aside class="sidebar" aria-label="Primary navigation">
+  <a class="sidebar-brand" href="/" aria-label="Agent Platform home">
+    <span class="sidebar-glyph">${icon("diamond", 22)}</span>
+    <span class="sidebar-name">Agent Platform</span>
+  </a>
+  <nav class="sidebar-nav" role="tablist">
+    ${TAB_DEFS.map((t, i) => `
+      <button
+        class="sidebar-item${i === 0 ? " sidebar-item-active" : ""}"
+        type="button" role="tab"
+        aria-selected="${i === 0 ? "true" : "false"}"
+        aria-controls="tab-${t.id}"
+        data-tab="${t.id}">
+        <span class="sidebar-item-icon">${sidebarIcons[t.id]}</span>
+        <span class="sidebar-item-label">${escape(t.label)}</span>
+      </button>`).join("")}
+  </nav>
+  <div class="sidebar-foot">
+    <div class="sidebar-status badge-${overall.tone}">
+      <span class="dot dot-${overall.tone}"></span>
+      <span class="sidebar-status-text">${escape(overall.label)}</span>
+    </div>
+  </div>
+</aside>`;
+}
+
+function renderServerBar(s: Snapshot): string {
+  const vm = s.hostinger.vm;
+  const dc = s.hostinger.dataCenter;
+  const ipv4 = vm?.ipv4[0]?.address ?? "—";
+  const stateTone = vm?.state === "running" ? "ok" : "warn";
+  return `
+<div class="server-bar">
+  <span class="server-bar-glyph">${icon("server", 16)}</span>
+  <span class="server-bar-host">${escape(vm?.hostname ?? s.local.hostname)}</span>
+  <span class="server-bar-sep" aria-hidden="true">·</span>
+  <span class="server-bar-ip mono">${escape(ipv4)}</span>
+  <span class="server-bar-sep" aria-hidden="true">·</span>
+  <span class="server-bar-region">${dc ? escape(dc.city + ", " + dc.location.toUpperCase()) : "—"}</span>
+  <span class="server-bar-sep" aria-hidden="true">·</span>
+  <span class="server-bar-os">${escape(vm?.template.name ?? "—")}</span>
+  <span class="server-bar-state badge-${stateTone}">
+    <span class="dot dot-${stateTone}"></span>${escape(vm?.state === "running" ? "Running" : (vm?.state ?? "Unknown"))}
+  </span>
+</div>`;
+}
+
+function layout({ title, body, buildId }: { title: string; body: string; buildId: string }): string {
+  // Inline theme-init: read localStorage + system pref before paint to avoid flash of wrong theme.
+  const themeInit = `(function(){try{var s=localStorage.getItem('console-theme');var m=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';var t=s||m;document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
+  return `<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=yes" />
+  <meta name="theme-color" content="#0a0807" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f6f0e6" media="(prefers-color-scheme: light)" />
+  <title>${escape(title)}</title>
+  <meta name="description" content="Live operations console for Hermes, Paperclip, and your Hostinger server." />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Agents" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="format-detection" content="telephone=no" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="/assets/app.css?v=${escape(buildId)}" />
+  <meta name="x-console-build" content="${escape(buildId)}" />
+  <script>${themeInit}</script>
+</head>
+<body data-build="${escape(buildId)}">
+${body}
+<script type="module" src="/assets/app.js?v=${escape(buildId)}"></script>
+</body>
+</html>`;
+}
+
+function renderAppBar(s: Snapshot): string {
+  const overall = healthSummary(s);
+  return `
+<header class="appbar">
+  <div class="appbar-row">
+    <a class="appbar-brand-mobile" href="/" aria-label="Agent Platform home">
+      <span class="appbar-glyph">${icon("diamond", 20)}</span>
+      <span class="appbar-name">Agents</span>
+    </a>
+    <h1 class="appbar-title" data-current-tab-title>Overview</h1>
+    <div class="appbar-company" data-company-switcher hidden>
+      <button class="appbar-company-btn" type="button" data-company-btn aria-expanded="false">
+        <span class="appbar-company-label" data-company-label>—</span>
+        ${icon("chevron-down", 14)}
+      </button>
+      <ul class="appbar-company-menu" data-company-menu hidden></ul>
+    </div>
+    <div class="appbar-meta">
+      <button class="appbar-search" type="button" data-palette-open aria-label="Quick search">
+        ${icon("search", 18)}
+        <kbd class="appbar-search-kbd">⌘K</kbd>
+      </button>
+      <button class="appbar-status appbar-status-${overall.tone}" type="button" data-status-pill aria-label="System status">
+        ${statusGlyph(overall.tone)}
+        <span class="appbar-status-text">${escape(overall.label)}</span>
+      </button>
+      <span class="appbar-stamp" data-live-stamp title="${escape(stamp(s.generatedAt))}">
+        <span class="live-pulse" aria-hidden="true"><span class="live-pulse-dot"></span></span>
+        <span class="appbar-stamp-text">Updated ${escape(ago(s.generatedAt))}</span>
+      </span>
+      <button class="appbar-theme" type="button" data-theme-toggle aria-label="Toggle light/dark mode">
+        <span class="theme-icon theme-icon-dark" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
+        <span class="theme-icon theme-icon-light" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg></span>
+      </button>
+      <button class="appbar-refresh" type="button" data-refresh aria-label="Refresh data">
+        ${icon("refresh-cw", 18)}
+      </button>
+    </div>
+  </div>
+</header>`;
+}
+
+const TAB_DEFS: { id: string; label: string }[] = [
+  { id: "overview", label: "Overview" },
+  { id: "agents",   label: "Agents" },
+  { id: "vps",      label: "Server" },
+  { id: "tasks",    label: "Tasks" },
+  { id: "more",     label: "More" },
+];
+
+function healthSummary(s: Snapshot): { tone: "ok" | "warn" | "bad"; label: string } {
+  const issues: string[] = [];
+  if (s.hostinger.configured && s.hostinger.error) issues.push("server data");
+  if (s.agents.hermes.dashboardUnitActive !== "active") issues.push("Hermes");
+  if (s.agents.codexPool.some((w) => w.authState === "quarantined")) issues.push("Codex pool");
+  if (issues.length === 0) return { tone: "ok", label: "All systems healthy" };
+  if (issues.length === 1) return { tone: "warn", label: `${issues[0]} needs attention` };
+  return { tone: "bad", label: `${issues.length} systems need attention` };
+}
+
+function statusGlyph(tone: "ok" | "warn" | "bad"): string {
+  if (tone === "ok") return `<span class="status-glyph status-ok">${icon("check-circle", 14)}</span>`;
+  if (tone === "warn") return `<span class="status-glyph status-warn">${icon("alert-triangle", 14)}</span>`;
+  return `<span class="status-glyph status-bad">${icon("x-circle", 14)}</span>`;
+}
+
+function renderTabPanel(id: string, active: boolean, body: string): string {
+  return `<section class="tab-panel${active ? " tab-active" : ""}" data-tab-panel="${id}" id="tab-${id}" role="tabpanel" aria-labelledby="navtab-${id}"${active ? "" : " hidden"}>
+${body}
+</section>`;
+}
+
+// ────────────────────────────────────────────────────────
+// OVERVIEW
+// ────────────────────────────────────────────────────────
+
+function renderOverview(s: Snapshot): string {
+  return `
+${renderVitals(s)}
+${renderChannelsCard()}
+${renderSummaryCard()}
+${renderActivityFeed()}
+${renderQuickAgents(s)}
+${renderTasksMini(s)}
+`;
+}
+
+function renderChannelsCard(): string {
+  return `
+<section class="channels-card" data-channels-card>
+  <header class="section-row">
+    <h2 class="section-h">Channels</h2>
+    <span class="section-meta">Hermes gateway</span>
+  </header>
+  <div class="channels-content" data-channels-content>
+    <p class="channels-loading">Loading channel status…</p>
+  </div>
+</section>`;
+}
+
+function renderSummaryCard(): string {
+  return `
+<section class="summary-card" data-summary-card hidden>
+  <header class="section-row">
+    <h2 class="section-h" data-summary-title>Today's report</h2>
+    <button class="link-btn" type="button" data-summary-toggle aria-expanded="false">Expand ${icon("chevron-down", 14)}</button>
+  </header>
+  <div class="summary-body" data-summary-body></div>
+</section>`;
+}
+
+function renderActivityFeed(): string {
+  return `
+<section class="activity-feed-section">
+  <header class="section-row">
+    <h2 class="section-h">Live activity</h2>
+    <span class="section-meta" data-activity-meta>Last 8 heartbeats</span>
+  </header>
+  <ul class="activity-list" data-activity-list>
+    <li class="activity-empty">Connecting to live stream…</li>
+  </ul>
+</section>`;
+}
+
+function renderIdentityCard(s: Snapshot): string {
+  const vm = s.hostinger.vm;
+  const dc = s.hostinger.dataCenter;
+  const ipv4 = vm?.ipv4[0]?.address ?? "—";
+  const sub = s.hostinger.subscriptions.find((x) => x.id === vm?.subscriptionId);
+  const stateLabel = vm?.state === "running" ? "Running" : (vm?.state ?? "Unknown");
+  const stateTone = vm?.state === "running" ? "ok" : "warn";
+
+  // Editorial-typographic hero: no card chrome, just text on the page with a soft
+  // amber wash behind. Stats live in a slim strip below, separated by a hairline.
+  return `
+<section class="hero">
+  <div class="hero-wash" aria-hidden="true"></div>
+  <header class="hero-head">
+    <span class="hero-eyebrow">Your server</span>
+    <span class="hero-state badge-${stateTone}">
+      <span class="dot dot-${stateTone}"></span>
+      ${escape(stateLabel)}
+    </span>
+  </header>
+  <h1 class="hero-hostname">${escape(vm?.hostname ?? s.local.hostname)}</h1>
+  <p class="hero-sub">
+    <span class="mono">${escape(ipv4)}</span>
+    <span class="sep">·</span>
+    <span>${dc ? escape(dc.city + ", " + dc.location.toUpperCase()) : "—"}</span>
+    <span class="sep">·</span>
+    <span>${escape(vm?.template.name ?? "—")}</span>
+  </p>
+  <div class="hero-stats">
+    <div class="hero-stat"><span class="hero-stat-label">Plan</span><span class="hero-stat-value">${escape(vm?.plan ?? "—")}</span></div>
+    <div class="hero-stat"><span class="hero-stat-label">vCPU</span><span class="hero-stat-value">${vm?.cpus ?? "—"}</span></div>
+    <div class="hero-stat"><span class="hero-stat-label">Memory</span><span class="hero-stat-value">${vm ? Math.round(vm.memoryMb / 1024) + " GB" : "—"}</span></div>
+    <div class="hero-stat"><span class="hero-stat-label">Storage</span><span class="hero-stat-value">${vm ? Math.round(vm.diskMb / 1024) + " GB" : "—"}</span></div>
+    <div class="hero-stat"><span class="hero-stat-label">Uptime</span><span class="hero-stat-value" title="${escape(s.local.uptimeSeconds + " seconds")}">${escape(friendlyDuration(s.local.uptimeSeconds))}</span></div>
+    <div class="hero-stat"><span class="hero-stat-label">Load</span><span class="hero-stat-value" title="${s.local.loadAvg.join(" / ")}">${s.local.loadAvg[0].toFixed(2)}</span></div>
+    ${
+      sub?.next_billing_at
+        ? `<div class="hero-stat hero-stat-renewal"><span class="hero-stat-label">Renews</span><span class="hero-stat-value" title="${escape(stamp(sub.next_billing_at))}">${escape(friendlyDate(sub.next_billing_at))}</span></div>`
+        : ""
+    }
+  </div>
+</section>`;
+}
+
+function renderVitals(s: Snapshot): string {
+  const localMemPct = (s.local.memUsedBytes / Math.max(1, s.local.memTotalBytes)) * 100;
+  const localDiskPct = (s.local.diskRootUsedBytes / Math.max(1, s.local.diskRootTotalBytes)) * 100;
+  const m = s.hostinger.metrics;
+
+  const tiles = [
+    {
+      label: "CPU",
+      iconName: "cpu" as const,
+      value: pct(s.local.cpuPct, 0),
+      sub: `${s.local.cores} cores`,
+      meter: Math.min(100, s.local.cpuPct),
+      series: s.localHistory.cpu,
+      tone: tonePct(s.local.cpuPct, 70, 90),
+      sparkMax: 100,
+    },
+    {
+      label: "Memory",
+      iconName: "memory-stick" as const,
+      value: pct(localMemPct, 0),
+      sub: bytesOf(s.local.memUsedBytes, s.local.memTotalBytes),
+      meter: localMemPct,
+      series: s.localHistory.mem,
+      tone: tonePct(localMemPct, 75, 90),
+      sparkMax: 100,
+    },
+    {
+      label: "Storage",
+      iconName: "hard-drive" as const,
+      value: pct(localDiskPct, 0),
+      sub: bytesOf(s.local.diskRootUsedBytes, s.local.diskRootTotalBytes),
+      meter: localDiskPct,
+      series: m?.diskBytes.points.map((p) => p.v) ?? [],
+      tone: tonePct(localDiskPct, 75, 90),
+      sparkMax: undefined as number | undefined,
+    },
+    {
+      label: "Network",
+      iconName: "wifi" as const,
+      value: bytesPerSec(s.local.netRxBytes + s.local.netTxBytes, 1),
+      sub: `↓ ${bytesPerSec(s.local.netRxBytes, 0)} &nbsp; ↑ ${bytesPerSec(s.local.netTxBytes, 0)}`,
+      meter: null as number | null,
+      series: s.localHistory.rxBps,
+      tone: "ok" as const,
+      sparkMax: undefined as number | undefined,
+    },
+  ];
+
+  return `
+<section class="vitals-section">
+  <header class="section-row">
+    <h2 class="section-h">Health</h2>
+    <span class="section-meta">live</span>
+  </header>
+  <div class="vital-grid">
+    ${tiles
+      .map(
+        (t) => `
+      <article class="vital tone-${t.tone}" data-vital="${escape(t.label.toLowerCase())}">
+        <span class="vital-label">${escape(t.label)}</span>
+        <div class="vital-value">${t.value}</div>
+        ${
+          t.meter !== null
+            ? `<div class="meter meter-${t.tone}"><span class="meter-fill" style="width:${t.meter.toFixed(1)}%"></span></div>`
+            : ""
+        }
+        <div class="vital-spark">${sparkline(t.series, { width: 320, height: 32, stroke: "var(--accent)", fill: "var(--accent)", max: t.sparkMax })}</div>
+        <div class="vital-sub">${t.sub}</div>
+      </article>`,
+      )
+      .join("")}
+  </div>
+</section>`;
+}
+
+function tonePct(value: number, warnAt: number, badAt: number): "ok" | "warn" | "bad" {
+  if (value >= badAt) return "bad";
+  if (value >= warnAt) return "warn";
+  return "ok";
+}
+
+function renderQuickAgents(s: Snapshot): string {
+  const h = s.agents.hermes;
+  const p = s.agents.paperclip;
+  // Legacy: claude-max-api-proxy was retired 2026-06-08.
+  const c: any = null;
+  const pool = s.agents.codexPool;
+  const codexEnabled = pool.filter((w) => w.enabled).length;
+  const codexQuarantined = pool.filter((w) => w.authState === "quarantined").length;
+
+  const rows = [
+    {
+      iconName: "calendar-clock" as const,
+      name: "Hermes",
+      blurb: "Scheduled jobs and memory",
+      detail: `${h.schedules.length === 0 ? "No schedules yet" : `${h.schedules.length} ${h.schedules.length === 1 ? "schedule" : "schedules"}`} · ${h.memoryFiles} ${h.memoryFiles === 1 ? "memory" : "memories"}`,
+      state: h.dashboardUnitActive === "active" ? "Running" : "Stopped",
+      tone: h.dashboardUnitActive === "active" ? "ok" : "warn",
+      color: "hermes",
+    },
+    {
+      iconName: "paperclip" as const,
+      name: "Paperclip",
+      blurb: "Delegated agent work",
+      detail: p.installed
+        ? (p.recentRuns.length > 0 ? `${p.recentRuns.length} recent ${p.recentRuns.length === 1 ? "run" : "runs"}` : "Installed, idle")
+        : "Not installed yet",
+      state: p.installed ? (p.unitActive === "active" ? "Running" : "Idle") : "Pending",
+      tone: p.installed ? (p.unitActive === "active" ? "ok" : "dim") : "warn",
+      color: "paperclip",
+    },
+    {
+      iconName: "zap" as const,
+      name: "Claude proxy",
+      blurb: "Local LLM gateway",
+      detail: c.healthOk ? `Healthy · ${c.recentRoundTripMs ?? "—"}ms response` : "Not reachable",
+      state: c.healthOk ? "Running" : "Offline",
+      tone: c.healthOk ? "ok" : "warn",
+      color: "claude",
+    },
+    {
+      iconName: "layers" as const,
+      name: "Codex workers",
+      blurb: "Parallel worker identities",
+      detail: codexQuarantined > 0
+        ? `${codexQuarantined} quarantined`
+        : (codexEnabled === pool.length ? `${pool.length} workers, all ready` : `${codexEnabled} of ${pool.length} ready`),
+      state: codexQuarantined > 0 ? "Issues" : (codexEnabled > 0 ? "Ready" : "Disabled"),
+      tone: codexQuarantined > 0 ? "bad" : (codexEnabled > 0 ? "ok" : "warn"),
+      color: "codex",
+    },
+  ];
+
+  return `
+<section class="agents-quick">
+  <header class="section-row">
+    <h2 class="section-h">Agents</h2>
+    <button class="link-btn" type="button" data-jump-tab="agents">View all ${icon("chevron-right", 14)}</button>
+  </header>
+  <div class="agent-grid">
+    ${rows
+      .map(
+        (r) => `
+      <article class="agent-tile agent-tint-${escape(r.color)}">
+        <header class="agent-tile-head">
+          <span class="agent-tile-glyph">${icon(r.iconName, 22)}</span>
+          <span class="agent-tile-state badge-${r.tone}">
+            <span class="dot dot-${r.tone}"></span>${escape(r.state)}
+          </span>
+        </header>
+        <h3 class="agent-tile-name">${escape(r.name)}</h3>
+        <p class="agent-tile-blurb">${escape(r.blurb)}</p>
+        <p class="agent-tile-detail">${escape(r.detail)}</p>
+      </article>`,
+      )
+      .join("")}
+  </div>
+</section>`;
+}
+
+function renderTasksMini(s: Snapshot): string {
+  const active = s.tasks.active.slice(0, 3);
+  return `
+<section class="tasks-mini">
+  <header class="section-row">
+    <h2 class="section-h">Active tasks</h2>
+    <button class="link-btn" type="button" data-jump-tab="tasks">View all ${icon("chevron-right", 14)}</button>
+  </header>
+  ${active.length === 0
+    ? `<p class="hero-empty">The worker pool is idle.</p>`
+    : active.map((t) => renderTaskRow(t)).join("")}
+</section>`;
+}
+
+// ────────────────────────────────────────────────────────
+// AGENTS TAB
+// ────────────────────────────────────────────────────────
+
+function renderAgents(s: Snapshot): string {
+  const h = s.agents.hermes;
+  const p = s.agents.paperclip;
+  // Legacy: claude-max-api-proxy was retired 2026-06-08.
+  const c: any = null;
+
+  return `
+${renderAgentRoster()}
+${renderFailedCronsPanel()}
+<section class="agents-section">
+  <header class="section-row">
+    <h2 class="section-h">Agents</h2>
+    <span class="section-meta">Your background workers</span>
+  </header>
+
+  <article class="card agent-card agent-tint-hermes">
+    <header class="agent-head">
+      <div class="agent-title">
+        <span class="agent-glyph">${icon("calendar-clock", 22)}</span>
+        <div>
+          <h3 class="agent-name">Hermes</h3>
+          <div class="agent-blurb">Scheduled jobs and memory</div>
+        </div>
+      </div>
+      <div class="agent-state badge-${h.dashboardUnitActive === "active" ? "ok" : "warn"}">
+        <span class="dot dot-${h.dashboardUnitActive === "active" ? "ok" : "warn"}"></span>
+        <span>${escape(h.dashboardUnitActive === "active" ? "Running" : "Stopped")}</span>
+      </div>
+    </header>
+    <dl class="kv-grid">
+      <div><dt>Dashboard</dt><dd><a href="${escape(h.dashboardUrl)}" target="_blank" rel="noopener">Open dashboard ${icon("arrow-up-right", 12)}</a></dd></div>
+      <div><dt>Schedules</dt><dd>${h.schedules.length === 0 ? "None set up yet" : `${h.schedules.length} configured`}</dd></div>
+      <div><dt>Memory</dt><dd>${h.memoryFiles} ${h.memoryFiles === 1 ? "entry" : "entries"}</dd></div>
+      <div><dt>Last event</dt><dd title="${escape(stamp(h.lastEventAt))}">${escape(ago(h.lastEventAt))}</dd></div>
+    </dl>
+    ${
+      h.schedules.length > 0
+        ? `<ul class="agent-rows">
+            ${h.schedules.slice(0, 5).map((sch) => `
+              <li class="agent-row">
+                <span class="dot dot-${sch.enabled ? "ok" : "dim"}"></span>
+                <span class="agent-row-name">${escape(sch.name)}</span>
+                <span class="agent-row-meta">${escape(sch.schedule)}</span>
+              </li>`).join("")}
+          </ul>`
+        : ""
+    }
+  </article>
+
+  <article class="card agent-card agent-tint-paperclip">
+    <header class="agent-head">
+      <div class="agent-title">
+        <span class="agent-glyph">${icon("paperclip", 22)}</span>
+        <div>
+          <h3 class="agent-name">Paperclip</h3>
+          <div class="agent-blurb">Delegated agent work</div>
+        </div>
+      </div>
+      <div class="agent-state badge-${p.installed ? (p.unitActive === "active" ? "ok" : "dim") : "warn"}">
+        <span class="dot dot-${p.installed ? (p.unitActive === "active" ? "ok" : "dim") : "warn"}"></span>
+        <span>${escape(p.installed ? (p.unitActive === "active" ? "Running" : "Idle") : "Pending")}</span>
+      </div>
+    </header>
+    <dl class="kv-grid">
+      <div><dt>Installed</dt><dd>${p.installed ? `<span class="pill pill-ok">Yes</span>` : `<span class="pill pill-warn">Pending</span>`}</dd></div>
+      <div><dt>Configured</dt><dd>${p.configPresent ? `<span class="pill pill-ok">Yes</span>` : `<span class="pill pill-warn">Missing</span>`}</dd></div>
+      <div><dt>Bridge</dt><dd class="mono">paperclip-company-runner</dd></div>
+      <div><dt>Recent runs</dt><dd>${p.recentRuns.length}</dd></div>
+    </dl>
+    ${
+      p.recentRuns.length > 0
+        ? `<ul class="agent-rows">
+            ${p.recentRuns.map((r) => `
+              <li class="agent-row">
+                <span class="dot dot-${r.status === "completed" ? "ok" : r.status === "failed" ? "bad" : r.status === "running" ? "warn" : "dim"}"></span>
+                <span class="agent-row-name">${escape(r.taskName ?? r.runId)}</span>
+                <span class="agent-row-meta" title="${escape(stamp(r.lastEventAt))}">${escape(ago(r.lastEventAt))}</span>
+              </li>`).join("")}
+          </ul>`
+        : `<div class="notes">${p.notes.map((n) => `<div class="note">${escape(n)}</div>`).join("")}</div>`
+    }
+  </article>
+
+  <article class="card agent-card agent-tint-claude">
+    <header class="agent-head">
+      <div class="agent-title">
+        <span class="agent-glyph">${icon("zap", 22)}</span>
+        <div>
+          <h3 class="agent-name">Claude proxy</h3>
+          <div class="agent-blurb">Local LLM gateway</div>
+        </div>
+      </div>
+      <div class="agent-state badge-${c.healthOk ? "ok" : "warn"}">
+        <span class="dot dot-${c.healthOk ? "ok" : "warn"}"></span>
+        <span>${escape(c.healthOk ? "Running" : "Offline")}</span>
+      </div>
+    </header>
+    <dl class="kv-grid">
+      <div><dt>Address</dt><dd class="mono">127.0.0.1:${c.port}</dd></div>
+      <div><dt>Health check</dt><dd>${c.healthOk ? `<span class="pill pill-ok">200 OK</span>` : `<span class="pill pill-warn">Unreachable</span>`}</dd></div>
+      <div><dt>Auth</dt><dd>${c.bearerConfigured ? `<span class="pill pill-ok">Bearer set</span>` : `<span class="pill pill-warn">Bearer missing</span>`}</dd></div>
+      <div><dt>Response time</dt><dd>${c.recentRoundTripMs != null ? c.recentRoundTripMs + "&nbsp;ms" : "—"}</dd></div>
+    </dl>
+    <p class="tip">Use <code>with-claude-proxy</code> to inject the bearer token + base URL into any child process.</p>
+  </article>
+</section>`;
+}
+
+function renderCodexPool(s: Snapshot): string {
+  const pool = s.agents.codexPool;
+  if (pool.length === 0) return "";
+  const totalUsage = pool.reduce((a, b) => a + b.usageToday, 0);
+  const enabledCount = pool.filter((p) => p.enabled).length;
+  const quarantinedCount = pool.filter((p) => p.authState === "quarantined").length;
+
+  const statusBlurb = quarantinedCount > 0
+    ? `${quarantinedCount} worker${quarantinedCount === 1 ? "" : "s"} need attention`
+    : enabledCount === pool.length
+      ? "All workers ready"
+      : `${enabledCount} of ${pool.length} workers ready`;
+
+  return `
+<section class="codex-section">
+  <header class="section-row">
+    <h2 class="section-h">Codex workers</h2>
+    <span class="section-meta">${escape(statusBlurb)} · ${totalUsage} ${totalUsage === 1 ? "run" : "runs"} today</span>
+  </header>
+  <div class="card codex-card agent-tint-codex">
+    <p class="codex-explain">Each tile is one ChatGPT identity. Numbers show today's runs.</p>
+    <div class="codex-cells">
+      ${pool
+        .map((w) => {
+          const tone =
+            w.authState === "quarantined" ? "bad" :
+            !w.enabled ? "dim" :
+            w.usageToday > 0 ? "ok" :
+            w.authState === "valid" ? "warn" : "dim";
+          const idShort = w.id.replace("codex-", "");
+          return `
+          <div class="codex-cell tone-${tone}" title="${escape(w.id)} · ${escape(tone === "bad" ? "Quarantined" : tone === "dim" ? "Disabled" : tone === "warn" ? "Idle" : "Active")} · ${w.usageToday} run${w.usageToday === 1 ? "" : "s"} today">
+            <div class="codex-id">${escape(idShort)}</div>
+            <div class="codex-usage">${w.usageToday}</div>
+          </div>`;
+        })
+        .join("")}
+    </div>
+    ${quarantinedCount > 0 ? `<p class="warn-line">${quarantinedCount} worker${quarantinedCount === 1 ? " was" : "s were"} quarantined after an auth failure. Run <code>codex-worker-unquarantine</code> after fixing.</p>` : ""}
+  </div>
+</section>`;
+}
+
+// ────────────────────────────────────────────────────────
+// SERVER TAB
+// ────────────────────────────────────────────────────────
+
+function renderVpsTab(s: Snapshot): string {
+  const h = s.hostinger;
+  return `
+<section class="vps-section">
+  ${renderVpsIdentityFull(s)}
+  ${renderFirewallCard()}
+  ${renderSshKeysCard()}
+  ${h.configured ? renderHostingerDetail(s) : renderHostingerEmpty()}
+  ${renderInfraDetail(s)}
+</section>`;
+}
+
+function renderAgentRoster(): string {
+  return `
+<section class="roster-section">
+  <header class="section-row">
+    <h2 class="section-h">Agent roster</h2>
+    <span class="section-meta" data-roster-meta>Loading…</span>
+  </header>
+  <div class="roster-grid" data-agent-roster>
+    <article class="roster-tile roster-loading"><span class="roster-name">Loading…</span></article>
+  </div>
+</section>`;
+}
+
+function renderFailedCronsPanel(): string {
+  return `
+<section class="failed-crons-section" data-failed-crons-section hidden>
+  <header class="section-row">
+    <h2 class="section-h">Failed crons</h2>
+    <span class="section-meta" data-failed-crons-meta></span>
+  </header>
+  <ul class="failed-crons-list" data-failed-crons-list></ul>
+</section>`;
+}
+
+function renderFirewallCard(): string {
+  return `
+<article class="card firewall-card" data-firewall-card>
+  <h3 class="card-h">Firewall <span class="count" data-firewall-rule-count>—</span></h3>
+  <div class="firewall-meta" data-firewall-meta>Loading…</div>
+  <button class="link-btn" type="button" data-firewall-view hidden>View rules ${icon("chevron-right", 14)}</button>
+</article>`;
+}
+
+function renderSshKeysCard(): string {
+  return `
+<article class="card ssh-keys-card" data-ssh-keys-card>
+  <h3 class="card-h">SSH keys <span class="count" data-ssh-count>—</span></h3>
+  <ul class="ssh-keys-list" data-ssh-keys-list>
+    <li class="ssh-loading">Loading…</li>
+  </ul>
+</article>`;
+}
+
+function renderVpsIdentityFull(s: Snapshot): string {
+  const vm = s.hostinger.vm;
+  const dc = s.hostinger.dataCenter;
+  if (!vm) return renderIdentityCard(s);
+  const ipv4 = vm.ipv4[0]?.address ?? "—";
+  const ipv6 = vm.ipv6[0]?.address ?? "—";
+  return `
+<article class="card vps-full">
+  <header class="section-row">
+    <h2 class="section-h">Server</h2>
+    <span class="section-meta">From Hostinger</span>
+  </header>
+  <h3 class="vps-host">${escape(vm.hostname)}</h3>
+  <div class="vps-meta">
+    <span class="mono">${escape(ipv4)}</span>
+    <span class="sep">·</span>
+    <span class="mono dim">${escape(ipv6)}</span>
+  </div>
+  <dl class="kv-grid">
+    <div><dt>Status</dt><dd><span class="dot dot-${vm.state === "running" ? "ok" : "warn"}"></span> ${escape(vm.state === "running" ? "Running" : vm.state)}</dd></div>
+    <div><dt>Plan</dt><dd>${escape(vm.plan)}</dd></div>
+    <div><dt>Operating system</dt><dd>${escape(vm.template.name)}</dd></div>
+    <div><dt>Region</dt><dd>${dc ? escape(dc.city + ", " + dc.location.toUpperCase()) : "—"}</dd></div>
+    <div><dt>vCPU</dt><dd>${vm.cpus}</dd></div>
+    <div><dt>Memory</dt><dd>${Math.round(vm.memoryMb / 1024)} GB</dd></div>
+    <div><dt>Storage</dt><dd>${Math.round(vm.diskMb / 1024)} GB</dd></div>
+    <div><dt>Bandwidth</dt><dd>${Math.round(vm.bandwidthMb / 1024)} GB / mo</dd></div>
+    <div><dt>Provisioned</dt><dd title="${escape(stamp(vm.createdAt))}">${escape(friendlyDate(vm.createdAt))}</dd></div>
+    <div><dt>Lock state</dt><dd>${vm.actionsLock === "unlocked" ? "Unlocked" : `<span class="pill pill-warn">${escape(vm.actionsLock)}</span>`}</dd></div>
+  </dl>
+</article>`;
+}
+
+function renderHostingerEmpty(): string {
+  return `
+<article class="card empty-card">
+  <h3>Hostinger token not configured</h3>
+  <p>Set <code>HOSTINGER_API_TOKEN</code> in Doppler <code>agent-platform/prd_hostinger</code> to see backups, subscriptions, and domains here.</p>
+</article>`;
+}
+
+function renderHostingerDetail(s: Snapshot): string {
+  const backups = s.hostinger.backups;
+  const subs = s.hostinger.subscriptions;
+  const domains = s.hostinger.domains;
+  return `
+<article class="card list-card">
+  <h3 class="card-h">Backups <span class="count">${backups.length}</span></h3>
+  ${
+    backups.length === 0
+      ? renderEmpty("No backups yet", "Hostinger hasn't stored any backups for this server.")
+      : `<ul class="stack-list">
+          ${backups
+            .map(
+              (b) => `
+            <li>
+              <div class="stack-primary" title="${escape(stamp(b.created_at))}">${escape(friendlyDate(b.created_at))}</div>
+              <div class="stack-meta">${bytes(b.size * 1024)} · stored in ${escape(b.location)} · ${friendlyDuration(b.restore_time)} to restore</div>
+            </li>`,
+            )
+            .join("")}
+        </ul>`
+  }
+</article>
+
+<article class="card list-card">
+  <h3 class="card-h">Subscriptions <span class="count">${subs.length}</span></h3>
+  ${
+    subs.length === 0
+      ? renderEmpty("No subscriptions", "Nothing to bill.")
+      : `<ul class="stack-list">
+          ${subs
+            .map(
+              (sub) => `
+            <li>
+              <div class="stack-primary">${escape(sub.name)}</div>
+              <div class="stack-meta">$${(sub.total_price / 100).toFixed(0)} ${escape(sub.currency_code)}/yr · ${sub.is_auto_renewed ? "auto-renews" : "renews manually"} <span title="${escape(stamp(sub.next_billing_at))}">${escape(friendlyDate(sub.next_billing_at))}</span></div>
+              <div class="stack-status badge-${sub.status === "active" ? "ok" : "warn"}">${escape(sub.status === "active" ? "Active" : sub.status)}</div>
+            </li>`,
+            )
+            .join("")}
+        </ul>`
+  }
+</article>
+
+<article class="card list-card">
+  <h3 class="card-h">Domains <span class="count">${domains.length}</span></h3>
+  ${
+    domains.length === 0
+      ? renderEmpty("No domains", "Add a domain in Hostinger to see it here.")
+      : `<ul class="stack-list">
+          ${domains
+            .map(
+              (d) => `
+            <li>
+              <div class="stack-primary">${escape(d.domain ?? `Pending setup`)}</div>
+              <div class="stack-meta">Created <span title="${escape(stamp(d.created_at))}">${escape(friendlyDate(d.created_at))}</span>${d.expires_at ? ` · expires <span title="${escape(stamp(d.expires_at))}">${escape(friendlyDate(d.expires_at))}</span>` : ""}</div>
+              <div class="stack-status badge-${d.status === "active" ? "ok" : "warn"}">${escape(d.status.replace(/_/g, " "))}</div>
+            </li>`,
+            )
+            .join("")}
+        </ul>`
+  }
+</article>`;
+}
+
+function renderInfraDetail(s: Snapshot): string {
+  return `
+<article class="card list-card">
+  <h3 class="card-h">System services <span class="count">${s.services.length}</span></h3>
+  <ul class="stack-list">
+    ${s.services
+      .map(
+        (sv) => `
+      <li>
+        <div class="stack-primary mono">${escape(sv.unit)}</div>
+        <div class="stack-status badge-${sv.active === "active" ? "ok" : sv.active === "failed" ? "bad" : "warn"}">
+          <span class="dot dot-${sv.active === "active" ? "ok" : sv.active === "failed" ? "bad" : "warn"}"></span>
+          ${escape(sv.active === "active" ? "Running" : sv.active === "inactive" ? "Stopped" : sv.active === "failed" ? "Failed" : "Unknown")}
+        </div>
+      </li>`,
+      )
+      .join("")}
+  </ul>
+</article>
+
+<article class="card list-card">
+  <h3 class="card-h">Containers <span class="count">${s.docker.length}</span></h3>
+  ${
+    s.docker.length === 0
+      ? renderEmpty("No containers", "Nothing running in Docker right now.")
+      : `<ul class="stack-list">
+          ${s.docker
+            .map(
+              (c) => `
+            <li>
+              <div class="stack-primary mono">${escape(c.name)}</div>
+              <div class="stack-meta mono">${escape(c.image)}</div>
+              <div class="stack-status">${escape(c.status)}</div>
+            </li>`,
+            )
+            .join("")}
+        </ul>`
+  }
+</article>`;
+}
+
+// ────────────────────────────────────────────────────────
+// TASKS
+// ────────────────────────────────────────────────────────
+
+function renderTasks(s: Snapshot): string {
+  const active = s.tasks.active;
+  const recent = s.tasks.recent.filter((t) => t.status !== "active").slice(0, 10);
+  return `
+<section class="tasks-tab">
+  <header class="section-row">
+    <h2 class="section-h">Tasks</h2>
+    <span class="section-meta">${active.length} active · ${s.tasks.companies.length} ${s.tasks.companies.length === 1 ? "company" : "companies"}</span>
+  </header>
+
+  <h3 class="sub-h">Active now</h3>
+  ${active.length === 0 ? renderEmpty("Nothing active", "The pool is idle, ready for the next job.") : active.map((t) => renderTaskRow(t)).join("")}
+
+  <h3 class="sub-h">Recent</h3>
+  ${recent.length === 0 ? renderEmpty("No recent runs", "Past tasks will show up here once you've kicked some off.") : recent.map((t) => renderTaskRow(t)).join("")}
+
+  <h3 class="sub-h">Companies</h3>
+  <article class="card list-card">
+    <ul class="stack-list">
+      ${s.tasks.companies
+        .map(
+          (co) => `
+        <li>
+          <div class="stack-primary">${escape(co.slug)}</div>
+          <div class="stack-meta">${co.projects.length ? co.projects.length + " " + (co.projects.length === 1 ? "project" : "projects") + ": " + escape(co.projects.join(", ")) : "No projects yet"}</div>
+          <div class="stack-status">${co.paperclipMapped ? `<span class="pill pill-ok">Paperclip linked</span>` : ""}</div>
+        </li>`,
+        )
+        .join("")}
+    </ul>
+  </article>
+</section>`;
+}
+
+function renderTaskRow(t: import("../lib/tasks.ts").CompanyTask): string {
+  const risk = (t.riskLevel ?? "low").toLowerCase();
+  const riskLabel = risk === "high" ? "High risk" : risk === "med" || risk === "medium" ? "Medium risk" : "Low risk";
+  const modeLabel = friendlyMode(t.mode);
+  return `
+  <article class="card task-card risk-${escape(risk)}">
+    <header class="task-head">
+      <span class="task-co mono">${escape(t.company)} / ${escape(t.project)}</span>
+      <span class="task-age" title="${escape(stamp(t.createdUtc))}">${escape(ago(t.createdUtc))}</span>
+    </header>
+    <h4 class="task-name">${escape(titleCase(t.taskName))}</h4>
+    <div class="task-meta">
+      <span class="task-risk-pill risk-${escape(risk)}">${escape(riskLabel)}</span>
+      ${modeLabel ? `<span class="task-chip">${escape(modeLabel)}</span>` : ""}
+      ${t.workerProfile ? `<span class="task-chip">${escape(titleCase(t.workerProfile))}</span>` : ""}
+      ${t.githubRepo ? `<span class="task-repo mono dim">${escape(t.githubRepo)}</span>` : ""}
+    </div>
+  </article>`;
+}
+
+function friendlyMode(mode?: string): string {
+  if (!mode) return "";
+  switch (mode) {
+    case "read_or_analysis": return "Review only";
+    case "implementation_to_pr": return "Implementation → PR";
+    case "readonly": return "Read only";
+    default: return mode.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+  }
+}
+
+// ────────────────────────────────────────────────────────
+// MORE
+// ────────────────────────────────────────────────────────
+
+function renderMore(s: Snapshot): string {
+  return `
+<section class="more-section">
+  <header class="section-row">
+    <h2 class="section-h">More</h2>
+  </header>
+  ${renderAudit(s)}
+  <article class="card link-list">
+    <h3 class="card-h">Resources</h3>
+    <ul>
+      <li><a href="/docs/"><span class="link-icon">${icon("list-checks", 16)}</span> Documentation</a></li>
+      <li><a href="/docs/security"><span class="link-icon">${icon("alert-triangle", 16)}</span> Security posture</a></li>
+      <li><a href="/docs/audit-history"><span class="link-icon">${icon("activity", 16)}</span> Audit history</a></li>
+      <li><a href="/logs/"><span class="link-icon">${icon("hard-drive", 16)}</span> Task logs</a></li>
+      <li><a href="/integration-logs/"><span class="link-icon">${icon("server", 16)}</span> Integration logs</a></li>
+      <li><a href="https://hermes.hawilson.xyz" target="_blank" rel="noopener"><span class="link-icon">${icon("calendar-clock", 16)}</span> Hermes dashboard ${icon("arrow-up-right", 12)}</a></li>
+      <li><a href="/api/snapshot.json"><span class="link-icon">${icon("info", 16)}</span> Raw snapshot JSON</a></li>
+    </ul>
+  </article>
+  <article class="card install-card" data-install-card hidden>
+    <h3 class="card-h">Install the app</h3>
+    <p>Add the console to your home screen for a native, full-screen experience.</p>
+    <button class="primary-btn" type="button" data-install-btn>Install Agent Platform</button>
+  </article>
+  ${renderUpstreamHealth(s)}
+  <p class="footer-stamp" title="${escape(stamp(s.generatedAt))}">Updated ${escape(ago(s.generatedAt))} · build ${escape(s.generatedAt.toString(36).slice(-6))}</p>
+</section>`;
+}
+
+function renderUpstreamHealth(s: Snapshot): string {
+  const up = s.upstream ?? [];
+  if (up.length === 0) {
+    return `<article class="card upstream-card"><h3 class="card-h">Upstreams</h3><p class="upstream-empty">No probes yet — visit any other tab to seed status.</p></article>`;
+  }
+  const rows = up.map((u) => {
+    const tone = u.ok ? "ok" : u.consecutiveFailures >= 2 ? "bad" : "warn";
+    const label = u.ok ? "Reachable" : `${u.consecutiveFailures} consecutive failures`;
+    return `<li class="upstream-row">
+      <span class="dot dot-${tone}"></span>
+      <span class="upstream-name mono">${escape(u.name)}</span>
+      <span class="upstream-meta">${escape(label)} · ${u.latencyMs}ms</span>
+    </li>`;
+  }).join("");
+  return `<article class="card upstream-card">
+    <h3 class="card-h">Upstreams</h3>
+    <ul class="upstream-list">${rows}</ul>
+  </article>`;
+}
+
+function renderAudit(s: Snapshot): string {
+  return `
+<article class="card audit-card">
+  <h3 class="card-h">Recent activity <span class="count">last ${s.audits.length}</span></h3>
+  ${
+    s.audits.length === 0
+      ? renderEmpty("No audit entries", "Integration calls will appear here as they happen.")
+      : `<ul class="stack-list audit-list">
+          ${s.audits
+            .map(
+              (a) => {
+                const auditTime = parseAuditStamp(a.timestamp);
+                const tone = a.result === "success" ? "ok" : a.result === "failure" ? "bad" : "warn";
+                return `
+            <li>
+              <div class="stack-primary">${escape(friendlyService(a.service))} ${a.action ? `<span class="dim">·</span> ${escape(friendlyAction(a.action))}` : ""}</div>
+              <div class="stack-meta" title="${escape(a.timestamp)}">${escape(auditTime)} · by ${escape(a.actor)}</div>
+              <div class="stack-status badge-${tone}">${escape(a.result === "success" ? "Success" : a.result === "failure" ? "Failed" : a.result.replace(/_/g, " "))}</div>
+            </li>`;
+              },
+            )
+            .join("")}
+        </ul>`
+  }
+</article>`;
+}
+
+function parseAuditStamp(t: string): string {
+  const m = t.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/);
+  if (!m) return t;
+  const iso = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}Z`;
+  return ago(iso);
+}
+
+function friendlyService(s: string): string {
+  const map: Record<string, string> = {
+    hostinger_vps: "Hostinger server",
+    github: "GitHub",
+    cloudflare: "Cloudflare",
+    stripe: "Stripe",
+    google_workspace: "Google Workspace",
+  };
+  return map[s] ?? s.replace(/_/g, " ");
+}
+
+function friendlyAction(a: string): string {
+  return a.replace(/_/g, " ");
+}
+
+function renderEmpty(title: string, sub: string): string {
+  return `<div class="empty"><div class="empty-title">${escape(title)}</div><div class="empty-sub">${escape(sub)}</div></div>`;
+}
+
+// ────────────────────────────────────────────────────────
+// BOTTOM NAV
+// ────────────────────────────────────────────────────────
+
+function renderBottomNav(): string {
+  const icons: Record<string, string> = {
+    overview: icon("activity", 22),
+    agents:   icon("bot", 22),
+    vps:      icon("server", 22),
+    tasks:    icon("list-checks", 22),
+    more:     icon("more-horizontal", 22),
+  };
+
+  return `
+<nav class="bottom-nav" role="tablist" aria-label="Primary sections">
+  ${TAB_DEFS
+    .map(
+      (t, i) => `
+    <button
+      class="bottom-tab${i === 0 ? " bottom-tab-active" : ""}"
+      type="button"
+      role="tab"
+      id="navtab-${t.id}"
+      aria-controls="tab-${t.id}"
+      aria-selected="${i === 0 ? "true" : "false"}"
+      data-tab="${t.id}">
+      <span class="bottom-icon" aria-hidden="true">${icons[t.id]}</span>
+      <span class="bottom-label">${t.label}</span>
+    </button>`,
+    )
+    .join("")}
+</nav>`;
+}
+
+function renderInstallPrompt(): string {
+  return `
+<div class="install-toast" data-install-toast hidden>
+  <div class="install-toast-row">
+    <div>
+      <div class="install-toast-title">Install Agent Platform</div>
+      <div class="install-toast-sub">Add to home screen for a native feel</div>
+    </div>
+    <div class="install-toast-actions">
+      <button class="ghost-btn" type="button" data-install-dismiss>Not now</button>
+      <button class="primary-btn" type="button" data-install-confirm>Install</button>
+    </div>
+  </div>
+</div>`;
+}
+
+function renderRefreshHint(): string {
+  return `<div class="refresh-hint" data-refresh-hint aria-hidden="true">${icon("refresh-cw", 18)}</div>`;
+}
+
+// ────────────────────────────────────────────────────────
+// ALERTS BANNER (above Server Bar) — populated by SSE client
+// ────────────────────────────────────────────────────────
+
+function renderAlertsBanner(): string {
+  return `
+<div class="alerts-banner" data-alerts-banner data-state="empty" role="region" aria-label="System alerts">
+  <button class="alerts-banner-summary" type="button" data-alerts-toggle aria-expanded="false" aria-controls="alerts-list">
+    <span class="alerts-pulse" aria-hidden="true"><span class="alerts-pulse-dot"></span></span>
+    <span class="alerts-summary-text" data-alerts-summary>All clear</span>
+    <span class="alerts-meta" data-alerts-meta></span>
+    <span class="alerts-toggle-glyph" aria-hidden="true">${icon("chevron-down", 14)}</span>
+  </button>
+  <ul class="alerts-list" id="alerts-list" data-alerts-list role="list" aria-live="polite" hidden></ul>
+</div>`;
+}
+
+// ────────────────────────────────────────────────────────
+// COST STRIP (sticky, below banner, above Vitals) — SSE-driven
+// ────────────────────────────────────────────────────────
+
+function renderCostStrip(): string {
+  return `
+<div class="cost-strip" data-cost-strip data-empty="true" role="region" aria-label="Spend overview">
+  <div class="cost-strip-row">
+    <div class="cost-cell" data-cost-today>
+      <span class="cost-label">Today</span>
+      <span class="cost-value tabnum">$0.00</span>
+    </div>
+    <span class="cost-divider" aria-hidden="true"></span>
+    <div class="cost-cell" data-cost-mtd>
+      <span class="cost-label">Month to date</span>
+      <span class="cost-value tabnum">$0.00</span>
+    </div>
+    <span class="cost-divider" aria-hidden="true"></span>
+    <div class="cost-cell cost-cell-forecast" data-cost-forecast>
+      <span class="cost-label">Projected</span>
+      <span class="cost-value tabnum"><span class="cost-prefix" aria-hidden="true">≈</span>$0.00</span>
+    </div>
+    <span class="cost-divider" aria-hidden="true"></span>
+    <div class="cost-cell cost-cell-budget" data-cost-budget>
+      <span class="cost-label">Budget</span>
+      <span class="cost-value tabnum cost-dim" data-cost-budget-label>None set</span>
+      <div class="cost-meter" aria-hidden="true"><span class="cost-meter-fill" data-cost-budget-fill style="width:0%"></span></div>
+    </div>
+    <button class="cost-expand" type="button" data-cost-expand aria-expanded="false" aria-controls="cost-breakdown">
+      <span class="cost-expand-label">Breakdown</span>
+      <span class="cost-expand-glyph" aria-hidden="true">${icon("chevron-down", 14)}</span>
+    </button>
+  </div>
+  <p class="cost-empty-note" data-cost-empty-note>No spend recorded yet. Costs land here as agents bill their first runs.</p>
+  <div class="cost-breakdown" id="cost-breakdown" data-cost-breakdown hidden>
+    <div class="cost-tabs" role="tablist" aria-label="Cost breakdown dimension">
+      <button class="cost-tab cost-tab-active" type="button" role="tab" data-cost-tab="provider" aria-selected="true">Provider</button>
+      <button class="cost-tab" type="button" role="tab" data-cost-tab="agent" aria-selected="false">Agent</button>
+      <button class="cost-tab" type="button" role="tab" data-cost-tab="model" aria-selected="false">Model</button>
+    </div>
+    <ul class="cost-bars" data-cost-bars role="list"></ul>
+  </div>
+</div>`;
+}
+
+// ────────────────────────────────────────────────────────
+// COMMAND PALETTE (⌘K)
+// ────────────────────────────────────────────────────────
+
+function renderCommandPalette(): string {
+  return `
+<div class="palette" data-palette hidden style="display:none">
+  <div class="palette-backdrop" data-palette-backdrop></div>
+  <div class="palette-window" role="dialog" aria-modal="true" aria-label="Quick search">
+    <div class="palette-row">
+      <span class="palette-glyph" aria-hidden="true">${icon("search", 18)}</span>
+      <input class="palette-input" type="search" placeholder="Search issues, agents, runs, costs…" autocomplete="off" data-palette-input />
+      <kbd class="palette-kbd">esc</kbd>
+    </div>
+    <ul class="palette-results" data-palette-results></ul>
+    <div class="palette-foot">Powered by Paperclip search</div>
+  </div>
+</div>`;
+}

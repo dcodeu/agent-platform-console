@@ -1,0 +1,61 @@
+/* ─── TILE CHROME (shared across KPI + panel tiles) ─────── */
+.y2-tile {
+  background: var(--bg-1);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.y2-tile-h {
+  padding: 10px 13px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--rule);
+}
+.y2-tile-h h3 {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.35;
+}
+.y2-tile-src {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.y2-tile-src::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 1.5px;
+  flex-shrink: 0;
+}
+.y2-tile-src-g::before {
+  background: var(--accent);
+}
+.y2-tile-src-custom::before {
+  background: var(--fg-3);
+  border-radius: 50%;
+}
+.y2-tile-lbl {
+  display: none;
+}
+.y2-tile-b {
+  padding: 12px 14px;
+}
+
+@media (min-width: 720px) {
+  .y2-tile-lbl {
+    display: inline;
+  }
+}

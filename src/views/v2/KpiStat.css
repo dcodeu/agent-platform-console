@@ -1,0 +1,33 @@
+/* ─── KPI STAT ──────────────────────────────────────────── */
+.y2-k-stat .y2-tile-b {
+  padding: 14px 16px;
+}
+.y2-k-stat-hbox {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.y2-k-stat-n {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: var(--fg);
+}
+.y2-k-stat-aside {
+  display: grid;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-3);
+}
+.y2-k-stat-aside b {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+@media (min-width: 1024px) {
+  .y2-k-stat-n {
+    font-size: 30px;
+  }
+}

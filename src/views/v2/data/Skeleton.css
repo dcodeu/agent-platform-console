@@ -1,0 +1,29 @@
+/* ─── SKELETON (loading shimmer for KPI tiles) ──────────── */
+.y2-skeleton {
+  display: block;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--fg-3) 0%,
+    var(--fg-3) 40%,
+    color-mix(in oklch, var(--fg-3) 50%, var(--fg)) 50%,
+    var(--fg-3) 60%,
+    var(--fg-3) 100%
+  );
+  background-size: 220% 100%;
+  opacity: 0.35;
+  animation: y2-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+.y2-skeleton-inline {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+@keyframes y2-skeleton-shimmer {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: -20% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .y2-skeleton { animation: none; }
+}

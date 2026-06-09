@@ -1,0 +1,42 @@
+/* Heatmap — SVG grid + axis labels + floating tooltip. */
+
+.w-heat {
+  position: relative;
+  width: 100%;
+}
+.w-heat svg {
+  display: block;
+  width: 100%;
+  user-select: none;
+}
+.w-heat-axis {
+  font-family: var(--mono);
+  font-size: 10px;
+  fill: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.w-heat-tip {
+  position: absolute;
+  background: var(--bg-1);
+  border: 1px solid var(--rule-hi);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.w-heat-tip-x { color: var(--fg); }
+.w-heat-tip-y { color: var(--fg-3); }
+.w-heat-tip-v {
+  color: var(--accent);
+  font-weight: 600;
+  margin-left: 4px;
+}

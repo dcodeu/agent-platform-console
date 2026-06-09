@@ -1,0 +1,33 @@
+.w-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid var(--rule);
+  background: var(--bg-2);
+  color: var(--fg-2);
+}
+.w-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.w-pill-ok    { color: var(--accent); border-color: var(--accent-line); background: var(--accent-bg); }
+.w-pill-warn  { color: var(--attn);   border-color: var(--attn-line);   background: var(--attn-bg); }
+.w-pill-alert { color: var(--alert);  border-color: var(--alert);       background: var(--alert-bg); }
+.w-pill-info  { color: var(--fg-2);   border-color: var(--rule-hi);     background: var(--bg-2); }
+.w-pill-idle  { color: var(--fg-3);   border-color: var(--rule);        background: var(--bg-2); }
+
+.w-pill.is-pulse .w-pill-dot {
+  animation: w-pill-pulse 1.6s ease-in-out infinite;
+}
+@keyframes w-pill-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}

@@ -1,0 +1,568 @@
+/* /wall — NOC big-board styles.
+ *
+ * Wall-mounted at the office on a TV at 1920x1080. No nav, no scroll, fixed
+ * Overview. Re-uses tokens.css (palette) and the native widget chrome from
+ * widgets/WidgetCard.css. This file just composes the wall-level layout and
+ * the alert-zoom transition — no iframes, no Grafana embeds.
+ */
+
+/* Total fill, no scroll — board is fixed and TV-shaped. */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-0);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+/* ─── Root grid ──────────────────────────────────────────────────
+ * 2 columns: main content + 320px ticker rail. Inside the main column we
+ * stack header / SLO row / chart row vertically with grid-template-rows.
+ */
+.wall {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  height: 100vh;
+  width: 100vw;
+  background: var(--bg-0);
+}
+
+.wall-main {
+  display: grid;
+  /* head · slos · token strip · chart band · bottom strip · footer */
+  grid-template-rows: auto auto auto 1fr auto auto;
+  min-height: 0; /* allow inner overflow-hidden to honor the row budget */
+  border-right: 1px solid var(--rule);
+}
+
+/* ─── Header ─────────────────────────────────────────────────── */
+.wall-head {
+  display: flex;
+  align-items: center;
+  padding: 18px 28px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.wall-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.wall-glyph {
+  width: 38px;
+  height: 38px;
+  background: var(--accent);
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--bg-0);
+  font-weight: 800;
+  font-size: 17px;
+  font-family: var(--mono);
+}
+
+.wall-brand h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.wall-brand h1 small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-3);
+  margin-left: 12px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.wall-health {
+  margin-left: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--bg-0);
+  font-weight: 700;
+  font-size: 13px;
+}
+.wall-health.degraded {
+  background: var(--attn);
+}
+.wall-health.alert {
+  background: var(--alert);
+  color: var(--fg);
+}
+.wall-health .pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: wall-pulse 2s ease-in-out infinite;
+}
+@keyframes wall-pulse {
+  50% { opacity: 0.4; }
+}
+
+.wall-clock {
+  margin-left: auto;
+  text-align: right;
+}
+.wall-clock .time {
+  font-family: var(--mono);
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+}
+.wall-clock .date {
+  font-size: 12px;
+  color: var(--fg-3);
+  font-family: var(--mono);
+}
+
+/* ─── SLO row (5 large tiles) ──────────────────────────────────
+ * Each cell wraps a native widget (NativeStat / WidgetCard). The zoom-target
+ * shell pulses a coral border + glow so neighbours stay put — the wall is
+ * non-scrollable and we don't want to push tiles off the bottom.
+ */
+.wall-slos {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid var(--rule);
+  padding: 12px 18px;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.wall-slo-cell {
+  position: relative;
+  transition:
+    box-shadow 600ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 600ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 1;
+}
+/* Alert-zoom: don't scale (would overlap neighbors in a fixed grid). Instead
+   pulse a coral border + glow + tint to draw the eye to the affected tile. */
+.wall-slo-cell.is-zoomed {
+  z-index: 5;
+  box-shadow:
+    0 0 0 2px var(--attn) inset,
+    0 0 32px -6px var(--attn);
+  animation: wall-zoom-pulse 1.8s ease-in-out infinite;
+}
+@keyframes wall-zoom-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px var(--attn) inset,
+      0 0 16px -8px var(--attn);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px var(--attn) inset,
+      0 0 40px -2px var(--attn);
+  }
+}
+
+/* ─── Token-flow strip (1 wide chart, NEW) ───────────────── */
+.wall-tokens {
+  display: block;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--rule);
+  min-height: 0;
+}
+.wall-tokens > .w-card {
+  height: 100%;
+}
+.wall-tokens .w-card-b {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ─── Charts row (3 cols now) ──────────────────────────────── */
+.wall-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  padding: 12px 18px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.wall-charts > * {
+  min-width: 0;
+}
+
+/* ─── Bottom strip (4 cells, NEW) ─────────────────────────── */
+.wall-bottom {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 10px 18px;
+  border-top: 1px solid var(--rule);
+}
+.wall-bottom > * { min-width: 0; }
+
+/* Container list */
+.wall-cont-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wall-cont {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 4px 6px;
+  background: var(--bg-1);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+.wall-cont-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.wall-cont-dot.warn { background: var(--attn); }
+.wall-cont-dot.bad  { background: var(--alert); }
+.wall-cont-name {
+  color: var(--fg);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wall-cont-status {
+  color: var(--fg-3);
+  font-size: 10.5px;
+  text-transform: lowercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 110px;
+}
+.wall-cont-bad   { border-color: var(--alert); }
+.wall-cont-warn  { border-color: var(--attn); }
+
+/* Recent alerts list */
+.wall-alerts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wall-alert {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 5px 8px;
+  background: var(--bg-1);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+.wall-alert-sev {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: var(--bg-2);
+  color: var(--fg-2);
+}
+.wall-alert-sev.sev-critical { background: var(--alert); color: #fff; }
+.wall-alert-sev.sev-warn { background: var(--attn); color: var(--bg-0); }
+.wall-alert-sev.sev-info { background: var(--accent-bg); color: var(--accent); }
+.wall-alert-title {
+  color: var(--fg);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wall-alert-since {
+  color: var(--fg-3);
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+
+/* n8n flux 2x2 grid */
+.wall-n8n-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  flex: 1;
+}
+.wall-n8n-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8px 10px;
+  background: var(--bg-1);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  min-height: 50px;
+}
+.wall-n8n-cell.ok   { border-color: var(--accent-line); }
+.wall-n8n-cell.bad  { border-color: var(--alert); }
+.wall-n8n-cell.info { border-color: var(--accent-line); }
+.wall-n8n-num {
+  font-family: var(--mono);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  line-height: 1;
+}
+.wall-n8n-cell.ok   .wall-n8n-num { color: var(--accent); }
+.wall-n8n-cell.bad  .wall-n8n-num { color: var(--alert); }
+.wall-n8n-cell.info .wall-n8n-num { color: var(--attn); }
+.wall-n8n-lbl {
+  margin-top: 3px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Codex pool mini grid */
+.wall-codex-grid {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  gap: 4px;
+  align-items: center;
+}
+.wall-codex-cell {
+  aspect-ratio: 1 / 1;
+  border-radius: 4px;
+  background: var(--bg-2);
+  border: 1px solid var(--rule);
+  display: block;
+}
+.wall-codex-cell.is-ok {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.wall-codex-cell.is-quar {
+  background: var(--alert);
+  border-color: var(--alert);
+  opacity: 0.7;
+}
+
+/* ─── Footer plate ─────────────────────────────────────────── */
+.wall-foot {
+  padding: 10px 28px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  gap: 28px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+.wall-foot b {
+  color: var(--fg-2);
+  margin-left: 8px;
+  font-weight: 600;
+}
+
+/* ─── Ticker rail (right side, 320px) ─────────────────────── */
+.wall-tick {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg-0);
+}
+.wall-tick-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid var(--rule);
+}
+.wall-tick-h h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.wall-tick-h h2 small {
+  color: var(--fg-3);
+  font-family: var(--mono);
+  font-size: 11px;
+  margin-left: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.wall-tick-h .ratemono {
+  color: var(--fg-3);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.wall-tick-list {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 20px;
+}
+
+.wall-tick-ev {
+  display: grid;
+  grid-template-columns: 56px 12px 1fr;
+  align-items: start;
+  column-gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 12.5px;
+  animation: tick-fade-in 420ms ease-out;
+}
+.wall-tick-ev:last-child {
+  border-bottom: none;
+}
+.wall-tick-ev .ts {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  padding-top: 2px;
+}
+.wall-tick-ev .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 5px;
+  background: var(--accent);
+}
+.wall-tick-ev .dot.warn { background: var(--attn); }
+.wall-tick-ev .dot.bad  { background: var(--alert); }
+.wall-tick-ev .body .who {
+  font-weight: 600;
+  margin-right: 6px;
+}
+.wall-tick-ev .body .what {
+  color: var(--fg-2);
+}
+.wall-tick-ev .body .what em {
+  color: var(--accent);
+  font-style: normal;
+  font-family: var(--mono);
+}
+.wall-tick-ev .body .tag {
+  display: inline-block;
+  margin-top: 3px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+@keyframes tick-fade-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Stretch native widgets to fill their grid cells. WidgetCard / NativeStat
+ * are flex columns, so giving them height:100% on the wall makes them
+ * dominate each SLO cell and equalise the chart band heights. */
+.wall-slo-cell {
+  display: flex;
+}
+.wall-slo-cell > .w-card {
+  flex: 1;
+  min-height: 150px;
+}
+.wall-charts > .w-card {
+  height: 100%;
+  min-height: 0;
+}
+.wall-charts .w-card-b {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
+}
+
+/* CPU tile body: stacked big number + sparkline so the trend rides under
+ * the headline. Mirrors NativeStat's typographic scale. */
+.wall-cpu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.wall-cpu-n {
+  display: baseline;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--mono);
+  line-height: 1;
+}
+.wall-cpu-num {
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+}
+.wall-cpu-unit {
+  font-size: 18px;
+  color: var(--fg-3);
+}
+
+/* 7 tiles instead of 5 — slightly smaller numerals to fit, but still
+ * legible from across the room. */
+.wall-slo-cell .w-stat-num {
+  font-size: 32px;
+}
+.wall-slo-cell .w-stat-unit {
+  font-size: 14px;
+}
+
+/* CPU tile numbers also shrunk to match the 7-tile budget. */
+.wall-cpu-num {
+  font-size: 32px;
+}

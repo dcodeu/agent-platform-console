@@ -1,0 +1,60 @@
+/* NativeTable — shared visual language with .ag-table. */
+
+.w-tbl-wrap {
+  width: 100%;
+  overflow: auto;
+}
+.w-tbl-wrap.is-scroll {
+  overflow-y: auto;
+  border-top: 1px solid var(--rule);
+}
+.w-tbl-wrap.is-scroll .w-tbl thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.w-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.w-tbl thead th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--fg-3);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 8px 13px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--bg-1);
+  white-space: nowrap;
+}
+.w-tbl tbody td {
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--fg);
+}
+.w-tbl tbody tr:last-child td { border-bottom: 0; }
+.w-tbl tbody tr:hover td { background: var(--bg-2); }
+.w-tbl-dim {
+  color: var(--fg-3);
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+.w-tbl-compact tbody td { padding: 6px 13px; }
+.w-tbl-compact thead th { padding: 6px 13px; }
+
+.w-tbl-empty {
+  padding: 20px 14px;
+  color: var(--fg-3);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: center;
+}

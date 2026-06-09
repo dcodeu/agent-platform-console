@@ -1,0 +1,18 @@
+/* ─── KPI GRID (mobile 2×2 → tablet+ 4×1) ──────────────── */
+.y2-kpis {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 720px) {
+  .y2-kpis {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .y2-kpis {
+    gap: 14px;
+  }
+}

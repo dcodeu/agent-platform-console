@@ -1,0 +1,159 @@
+/* ─── IFRAME PANEL (Grafana /d-solo embed) ─────────────── */
+.y2-panel {
+  /* Same chrome as .y2-tile but allow body to be a flush iframe */
+  background: var(--bg-1);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.y2-panel-h {
+  padding: 10px 13px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--rule);
+  flex-shrink: 0;
+}
+.y2-panel-h h3 {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.35;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.y2-panel-src {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.y2-panel-src::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 1.5px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+.y2-panel-b {
+  position: relative;
+  background: var(--bg-2);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The iframe itself — flush to the body, transparent so chrome shows through */
+.y2-panel-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color-scheme: dark;
+}
+.y2-panel-frame--hidden {
+  visibility: hidden;
+}
+
+/* Skeleton: shown during HEAD-probe and while iframe loads.
+   Subtle bg-2 base with a bg-3 overlay pulsing across — calmer than the
+   old wide shimmer and stays inside the locked palette. */
+.y2-panel-skel {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-2);
+  overflow: hidden;
+}
+.y2-panel-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--bg-3) 50%,
+      transparent 100%
+    );
+  background-size: 200% 100%;
+  animation: y2-panel-skel-pulse 1.8s ease-in-out infinite;
+  opacity: 0.55;
+}
+@keyframes y2-panel-skel-pulse {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Error state: graceful, not loud — coral attention, not red alert.
+   Uses --attn-surface as a tinted body so the panel reads as "unavailable"
+   without screaming. */
+.y2-panel-err {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  background: var(--attn-surface);
+  color: var(--fg-3);
+  text-align: center;
+}
+.y2-panel-err-icon {
+  color: var(--attn);
+  margin-bottom: 2px;
+}
+.y2-panel-err-msg {
+  font-size: 12px;
+  color: var(--fg-2);
+  font-weight: 500;
+}
+.y2-panel-err-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fg-4);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.y2-panel-refresh {
+  appearance: none;
+  background: transparent;
+  color: var(--attn);
+  border: 1px solid var(--attn);
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-top: 4px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.y2-panel-refresh:hover,
+.y2-panel-refresh:focus-visible {
+  background: var(--attn-bg);
+  color: var(--attn);
+  outline: none;
+}
+.y2-panel-refresh svg {
+  width: 12px;
+  height: 12px;
+}

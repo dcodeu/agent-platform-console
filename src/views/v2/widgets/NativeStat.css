@@ -1,0 +1,57 @@
+.w-stat-n {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.w-stat-num {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--fg);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+}
+.w-stat-unit {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.w-stat-meta {
+  margin-top: 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.w-stat-delta {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--rule);
+  background: var(--bg-2);
+  color: var(--fg-2);
+}
+.w-stat-delta.is-pos {
+  color: var(--accent);
+  border-color: var(--accent-line);
+  background: var(--accent-bg);
+}
+.w-stat-delta.is-neg {
+  color: var(--attn);
+  border-color: var(--attn-line);
+  background: var(--attn-bg);
+}
+.w-stat-sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  letter-spacing: 0.02em;
+}

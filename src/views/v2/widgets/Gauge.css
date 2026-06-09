@@ -1,0 +1,18 @@
+.w-gauge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.w-gauge svg { display: block; }
+.w-gauge-v {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.w-gauge-l {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}

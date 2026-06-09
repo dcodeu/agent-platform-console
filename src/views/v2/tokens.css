@@ -1,0 +1,71 @@
+/* ─── PALETTE ─────────────────────────────────────────────
+   3 semantic colors. No purple. No blue. No amber. No gradients.
+
+   Neutrals (warm-charcoal, very low chroma at hue 200 — reads as gray):
+     bg-0  page          fg     primary text
+     bg-1  panels        fg-2   secondary
+     bg-2  chips/hover   fg-3   mono / dim
+     bg-3  avatars       fg-4   disabled
+     rule  borders       rule-hi hover-borders
+
+   accent (teal): brand · healthy · live · CTA · primary chart series
+   attn   (coral, warm): "needs your attention" — approvals, codex partial
+   alert  (red): broken — used very sparingly
+   viz-dim (warm gray-tan): chart secondary series (dashed only)
+*/
+:root {
+  --bg-0: oklch(0.155 0.005 200);
+  --bg-1: oklch(0.195 0.006 200);
+  --bg-2: oklch(0.235 0.007 200);
+  --bg-3: oklch(0.295 0.008 200);
+  --rule: oklch(0.31 0.010 200);
+  --rule-hi: oklch(0.42 0.012 200);
+  --fg:    oklch(0.96 0.005 200);
+  --fg-2:  oklch(0.78 0.006 200);
+  --fg-3:  oklch(0.58 0.006 200);
+  --fg-4:  oklch(0.42 0.006 200);
+
+  --accent:      oklch(0.82 0.110 195);
+  --accent-bg:   oklch(0.82 0.110 195 / 0.14);
+  --accent-line: oklch(0.82 0.110 195 / 0.42);
+
+  --attn:        oklch(0.78 0.095 35);
+  --attn-bg:    oklch(0.78 0.095 35 / 0.14);
+  --attn-line:  oklch(0.78 0.095 35 / 0.42);
+  /* Solid surface for the approval banner — coral-tinted dark, opaque */
+  --attn-surface: oklch(0.215 0.030 35);
+
+  --alert:       oklch(0.70 0.190 25);
+  --alert-bg:    oklch(0.70 0.190 25 / 0.14);
+
+  --viz-dim:     oklch(0.68 0.040 60);
+
+  --sans:'Inter', system-ui, -apple-system, sans-serif;
+  --mono:'IBM Plex Mono', ui-monospace, monospace;
+
+  --topbar-h:   48px;
+  --subnav-h:   40px;
+  --bnav-h:     58px;
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Fixed/portaled event ticker rail geometry. Kept as tokens so the
+     AppShell can tune the rail offset without page-specific overrides. */
+  --ticker-rail-top: calc(var(--safe-top) + var(--topbar-h) + var(--subnav-h) + var(--space-lg));
+  --ticker-rail-bottom: calc(var(--safe-bottom) + var(--space-lg));
+
+  /* ─── SPACING SCALE ──────────────────────────────────────
+     Use these tokens for layout rhythm. Patterns:
+       grid-gap between sections          → --space-md (16px)
+       gap between cards within a row     → --space-sm (12px)
+       margin above section headers       → --space-lg (24px)
+     Smaller / larger as needed. Do NOT introduce tab-specific values. */
+  --space-xs:  8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+}
+
+/* ─── ICONS (Lucide via better-icons) ────────────────────── */
+.icon { width: 18px; height: 18px; display: inline-block; flex-shrink: 0; vertical-align: middle; }

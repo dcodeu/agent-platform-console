@@ -1,0 +1,882 @@
+// Agent Platform Console — mobile-first PWA client.
+
+const $  = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+const REFRESH_MS = 5000;
+const HEAVY_REFRESH_MS = 20000;
+let paused = false;
+let deferredInstallPrompt = null;
+
+// ─── Service worker registration ───────────────────────────────
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js", { scope: "/" })
+      .then((reg) => {
+        reg.update().catch(() => {});
+        let reloaded = false;
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          if (reloaded) return;
+          reloaded = true;
+          location.reload();
+        });
+      })
+      .catch((err) => console.warn("[sw] register failed:", err));
+    navigator.serviceWorker.addEventListener("message", (e) => {
+      if (e.data?.type === "sw-updated") {
+        console.log("[sw] updated to new version");
+      }
+    });
+    fetch("/api/build", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((info) => {
+        const have = document.body?.dataset?.build;
+        if (have && info.build && info.build !== have) {
+          console.log("[console] build drift detected, reloading", { have, server: info.build });
+          location.reload();
+        }
+      })
+      .catch(() => {});
+  });
+}
+
+// ─── Tabs ──────────────────────────────────────────────────────
+
+const TAB_LABELS = {
+  overview: "Overview",
+  agents: "Agents",
+  vps: "Server",
+  tasks: "Tasks",
+  more: "More",
+};
+
+function activateTab(id) {
+  $$(".tab-panel").forEach((panel) => {
+    const match = panel.dataset.tabPanel === id;
+    panel.classList.toggle("tab-active", match);
+    panel.hidden = !match;
+  });
+  $$(".bottom-tab").forEach((tab) => {
+    const match = tab.dataset.tab === id;
+    tab.classList.toggle("bottom-tab-active", match);
+    tab.setAttribute("aria-selected", match ? "true" : "false");
+  });
+  $$(".sidebar-item").forEach((tab) => {
+    const match = tab.dataset.tab === id;
+    tab.classList.toggle("sidebar-item-active", match);
+    tab.setAttribute("aria-selected", match ? "true" : "false");
+  });
+  const title = $("[data-current-tab-title]");
+  if (title && TAB_LABELS[id]) title.textContent = TAB_LABELS[id];
+  window.scrollTo({ top: 0, behavior: "auto" });
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", id);
+    history.replaceState(null, "", url);
+  } catch {}
+}
+
+$$(".bottom-tab, .sidebar-item").forEach((btn) => {
+  btn.addEventListener("click", () => activateTab(btn.dataset.tab));
+});
+
+$$("[data-jump-tab]").forEach((btn) => {
+  btn.addEventListener("click", () => activateTab(btn.dataset.jumpTab));
+});
+
+try {
+  const params = new URLSearchParams(location.search);
+  const initial = params.get("tab");
+  if (initial && $(`[data-tab-panel="${initial}"]`)) activateTab(initial);
+} catch {}
+
+// ─── Refresh ───────────────────────────────────────────────────
+
+function fmtStamp(ms) {
+  const d = new Date(ms);
+  return d.toISOString().slice(0, 16).replace("T", " ") + " UTC";
+}
+
+function friendlyAgo(ms) {
+  const t = typeof ms === "string" ? Date.parse(ms) : ms;
+  if (!Number.isFinite(t)) return "—";
+  const diff = (Date.now() - t) / 1000;
+  if (diff < 0) return "just now";
+  if (diff < 45) return "just now";
+  if (diff < 90) return "a minute ago";
+  if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
+  if (diff < 5400) return "an hour ago";
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+  return `${Math.floor(diff / 86400)} days ago`;
+}
+
+function fmtDollars(n) {
+  if (!Number.isFinite(n)) return "$0.00";
+  if (Math.abs(n) >= 1000) return `$${(n / 1000).toFixed(1)}k`;
+  if (Math.abs(n) >= 100) return `$${n.toFixed(0)}`;
+  return `$${n.toFixed(2)}`;
+}
+
+async function pollSnapshot(showSpinner = false) {
+  if (paused) return null;
+  const refreshBtn = $("[data-refresh]");
+  if (showSpinner && refreshBtn) refreshBtn.classList.add("spinning");
+  try {
+    const res = await fetch("/api/snapshot.json", { cache: "no-store" });
+    if (!res.ok) return null;
+    const snap = await res.json();
+    updateLiveBits(snap);
+    return snap;
+  } catch {
+    return null;
+  } finally {
+    if (showSpinner && refreshBtn) {
+      setTimeout(() => refreshBtn.classList.remove("spinning"), 800);
+    }
+  }
+}
+
+function updateLiveBits(snap) {
+  const sub = $(".appbar-sub");
+  if (sub) sub.textContent = snap.hostinger?.vm?.hostname ?? snap.local.hostname;
+  const stamp = $("[data-live-stamp]");
+  if (stamp) {
+    stamp.textContent = `Updated ${friendlyAgo(snap.generatedAt)}`;
+    stamp.title = fmtStamp(snap.generatedAt);
+  }
+  setVitalText("cpu", `${snap.local.cpuPct.toFixed(1)}%`);
+  const memPct = (snap.local.memUsedBytes / Math.max(1, snap.local.memTotalBytes)) * 100;
+  setVitalText("memory", `${memPct.toFixed(0)}%`);
+  setVitalText("net", `${formatRate(snap.local.netRxBytes + snap.local.netTxBytes)}`);
+}
+
+function setVitalText(label, value) {
+  const tile = document.querySelector(`.vital[data-vital="${label}"] .vital-value`);
+  if (tile) tile.textContent = value;
+}
+
+function formatRate(bps) {
+  if (!Number.isFinite(bps) || bps <= 0) return "0 B/s";
+  const units = ["B", "KB", "MB", "GB"];
+  let i = 0;
+  let v = bps;
+  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+  return `${v.toFixed(1)} ${units[i]}/s`;
+}
+
+$("[data-refresh]")?.addEventListener("click", () => { pollSnapshot(true); pollHeavy(true); });
+
+document.addEventListener("visibilitychange", () => {
+  paused = document.visibilityState !== "visible";
+  if (!paused) { pollSnapshot(); pollHeavy(); }
+});
+
+setInterval(pollSnapshot, REFRESH_MS);
+setInterval(pollHeavy, HEAVY_REFRESH_MS);
+pollSnapshot();
+
+// ─── Heavy snapshot (Paperclip + Hermes API data) ──────────────
+
+let lastHeavy = null;
+
+async function pollHeavy(force = false) {
+  if (paused && !force) return null;
+  try {
+    const res = await fetch("/api/ops/heavy.json", { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    lastHeavy = data;
+    renderAlerts(data.alerts || []);
+    renderCostStrip(data.costs || null);
+    renderChannels(data.hermes?.status?.gateway_platforms || {});
+    renderSummary(data);
+    renderActivityFeed(data.activityFeed || []);
+    renderAgentRoster(data.agentRoster || []);
+    renderFailedCrons(data.hermes?.failedCrons || []);
+    renderFirewall(data.hostinger?.firewall || null);
+    renderSshKeys(data.hostinger?.sshKeys || []);
+    renderCompanySwitcher(data.companies || [], data.activeCompanyId);
+    return data;
+  } catch (e) {
+    console.warn("[heavy] fetch failed:", e);
+    return null;
+  }
+}
+
+pollHeavy();
+
+// ─── SSE client ────────────────────────────────────────────────
+
+let sse = null;
+function connectSse() {
+  if (sse) sse.close();
+  sse = new EventSource("/api/stream");
+  sse.addEventListener("hello", (e) => {
+    console.log("[sse] connected", JSON.parse(e.data));
+  });
+  sse.addEventListener("alert.created", (e) => {
+    const alert = JSON.parse(e.data);
+    upsertAlert(alert);
+  });
+  sse.addEventListener("alert.resolved", (e) => {
+    const { id } = JSON.parse(e.data);
+    removeAlert(id);
+  });
+  sse.addEventListener("heartbeat", () => {
+    // refresh activity feed soon
+    pollHeavy();
+  });
+  sse.addEventListener("cost.tick", (e) => {
+    const { mtdDollars, todayDollars, budgetPct } = JSON.parse(e.data);
+    quickCostUpdate({ mtdDollars, todayDollars, budgetPct });
+  });
+  sse.onerror = () => {
+    // EventSource auto-reconnects per server `retry:` directive
+    console.log("[sse] disconnected, will retry");
+  };
+}
+connectSse();
+
+// ─── Alerts banner ─────────────────────────────────────────────
+
+const alertsState = new Map();
+
+function upsertAlert(a) {
+  alertsState.set(a.id, a);
+  paintAlerts();
+}
+function removeAlert(id) {
+  alertsState.delete(id);
+  paintAlerts();
+}
+
+function renderAlerts(list) {
+  alertsState.clear();
+  for (const a of list) alertsState.set(a.id, a);
+  paintAlerts();
+}
+
+function paintAlerts() {
+  const banner = $("[data-alerts-banner]");
+  const list = $("[data-alerts-list]");
+  const summary = $("[data-alerts-summary]");
+  const meta = $("[data-alerts-meta]");
+  if (!banner) return;
+  const items = [...alertsState.values()];
+  const crits = items.filter((a) => a.severity === "critical").length;
+  const warns = items.filter((a) => a.severity === "warn").length;
+  if (items.length === 0) {
+    banner.dataset.state = "empty";
+    summary.textContent = "All clear";
+    if (meta) meta.textContent = "";
+    banner.setAttribute("aria-label", "No alerts");
+    if (list) list.innerHTML = "";
+    return;
+  }
+  banner.dataset.state = crits > 0 ? "critical" : "warn";
+  const parts = [];
+  if (crits > 0) parts.push(`${crits} critical`);
+  if (warns > 0) parts.push(`${warns} warning${warns === 1 ? "" : "s"}`);
+  summary.textContent = parts.join(", ") || `${items.length} alerts`;
+  if (meta) meta.textContent = items.length === 1 ? "1 active" : `${items.length} active`;
+  banner.setAttribute("aria-label", `${items.length} alert${items.length === 1 ? "" : "s"}`);
+  if (list) {
+    list.innerHTML = items
+      .map((a, i) => `
+        <li class="alert-row alert-${a.severity}" style="animation-delay:${i * 30}ms">
+          <span class="alert-kind">${escapeHtml(a.kind.replace(/_/g, " "))}</span>
+          <span class="alert-title">${escapeHtml(a.title)}</span>
+          ${a.detail ? `<span class="alert-detail">${escapeHtml(a.detail)}</span>` : ""}
+          ${a.link ? `<a class="alert-link" href="${a.link}" target="_blank" rel="noopener">open ↗</a>` : ""}
+        </li>
+      `).join("");
+  }
+}
+
+$("[data-alerts-toggle]")?.addEventListener("click", () => {
+  const banner = $("[data-alerts-banner]");
+  const list = $("[data-alerts-list]");
+  const btn = $("[data-alerts-toggle]");
+  const expanded = banner.classList.toggle("expanded");
+  list.hidden = !expanded;
+  btn.setAttribute("aria-expanded", String(expanded));
+});
+
+// ─── Cost strip ────────────────────────────────────────────────
+
+let costTabActive = "provider";
+
+function renderCostStrip(costs) {
+  if (!costs) return;
+  const strip = $("[data-cost-strip]");
+  const todayD = costs.today?.dollars ?? 0;
+  const mtdD = costs.mtd?.dollars ?? 0;
+  const forecastD = costs.forecastMonthDollars ?? 0;
+  const isEmpty = todayD === 0 && mtdD === 0 && forecastD === 0 && (costs.budgetCents ?? 0) === 0;
+  strip?.setAttribute("data-empty", String(isEmpty));
+  animateValueChange($("[data-cost-today] .cost-value"), fmtDollars(todayD));
+  animateValueChange($("[data-cost-mtd] .cost-value"), fmtDollars(mtdD));
+  const forecastEl = $("[data-cost-forecast] .cost-value");
+  if (forecastEl) {
+    const prefix = forecastEl.querySelector(".cost-prefix")?.outerHTML ?? "";
+    animateValueChange(forecastEl, prefix + fmtDollars(forecastD), true);
+  }
+  const budgetCell = $("[data-cost-budget]");
+  const budgetVal = $("[data-cost-budget-label]");
+  const budgetFill = $("[data-cost-budget-fill]");
+  if (costs.budgetCents > 0) {
+    budgetVal.textContent = `${costs.budgetPct.toFixed(0)}%`;
+    budgetVal.classList.remove("cost-dim");
+    budgetFill.style.width = `${Math.min(100, costs.budgetPct)}%`;
+    budgetCell.dataset.tone = costs.budgetPct >= 95 ? "bad" : costs.budgetPct >= 80 ? "warn" : "ok";
+  } else {
+    budgetVal.textContent = "None set";
+    budgetVal.classList.add("cost-dim");
+    budgetFill.style.width = "0%";
+    budgetCell.dataset.tone = "dim";
+  }
+  paintCostBars(costs);
+}
+
+function animateValueChange(el, next, asHtml = false) {
+  if (!el) return;
+  const current = asHtml ? el.innerHTML : el.textContent;
+  if (current === next) return;
+  el.classList.add("cost-flash");
+  setTimeout(() => el.classList.remove("cost-flash"), 380);
+  if (asHtml) el.innerHTML = next; else el.textContent = next;
+}
+
+function quickCostUpdate({ mtdDollars, todayDollars }) {
+  if (lastHeavy?.costs) {
+    lastHeavy.costs.today.dollars = todayDollars ?? lastHeavy.costs.today.dollars;
+    lastHeavy.costs.mtd.dollars = mtdDollars ?? lastHeavy.costs.mtd.dollars;
+    renderCostStrip(lastHeavy.costs);
+  }
+}
+
+function paintCostBars(costs) {
+  const bars = $("[data-cost-bars]");
+  if (!bars) return;
+  let rows = [];
+  if (costTabActive === "provider") rows = costs.byProvider || [];
+  else if (costTabActive === "agent") rows = costs.byAgent || [];
+  else rows = costs.byModel || [];
+  const max = Math.max(1, ...rows.map((r) => r.dollars ?? 0));
+  if (rows.length === 0) {
+    bars.innerHTML = `<li class="cost-bar-empty">No spend yet in this dimension.</li>`;
+    return;
+  }
+  bars.innerHTML = rows
+    .map((r) => {
+      const label = r.provider || r.agentName || r.model || "—";
+      const pct = ((r.dollars ?? 0) / max) * 100;
+      return `<li class="cost-bar"><span class="cost-bar-label">${escapeHtml(label)}</span>
+        <span class="cost-bar-track"><span class="cost-bar-fill" style="width:${pct}%"></span></span>
+        <span class="cost-bar-value">${fmtDollars(r.dollars ?? 0)}</span></li>`;
+    })
+    .join("");
+}
+
+$("[data-cost-expand]")?.addEventListener("click", () => {
+  const strip = $("[data-cost-strip]");
+  const breakdown = $("[data-cost-breakdown]");
+  const btn = $("[data-cost-expand]");
+  const expanded = strip.classList.toggle("expanded");
+  breakdown.hidden = !expanded;
+  btn.setAttribute("aria-expanded", String(expanded));
+});
+
+$$("[data-cost-tab]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    costTabActive = btn.dataset.costTab;
+    $$("[data-cost-tab]").forEach((b) => {
+      const match = b === btn;
+      b.classList.toggle("cost-tab-active", match);
+      b.setAttribute("aria-selected", String(match));
+    });
+    if (lastHeavy?.costs) paintCostBars(lastHeavy.costs);
+  });
+});
+
+// ─── Channels card ─────────────────────────────────────────────
+
+function renderChannels(platforms) {
+  const content = $("[data-channels-content]");
+  if (!content) return;
+  const known = ["slack", "discord", "telegram"];
+  const seen = new Set();
+  const entries = [];
+  for (const [name, info] of Object.entries(platforms || {})) {
+    seen.add(name);
+    entries.push({ name, info });
+  }
+  for (const k of known) if (!seen.has(k)) entries.push({ name: k, info: { connected: false } });
+  const connected = entries.filter((e) => isChannelConnected(e.info));
+  // Empty-state: avoid the identical-card-grid anti-pattern when nothing's connected.
+  if (connected.length === 0) {
+    content.innerHTML = `
+      <div class="channels-empty">
+        <p class="channels-empty-title">No notification channels connected</p>
+        <p class="channels-empty-sub">Slack, Discord, and Telegram are configured in Hermes. Open the Hermes dashboard to connect them so daily reports and critical alerts get delivered.</p>
+        <a class="channels-empty-action" href="https://hermes.hawilson.xyz" target="_blank" rel="noopener">Open Hermes ↗</a>
+      </div>`;
+    return;
+  }
+  // Real channels exist — show varied row pattern, not identical card grid.
+  content.innerHTML = `
+    <ul class="channels-rows" role="list">
+      ${entries.map((e) => channelRow(e.name, e.info)).join("")}
+    </ul>`;
+}
+
+function isChannelConnected(info) {
+  return info?.connected !== false && info?.state !== "disconnected" && info?.error == null && info?.connected !== undefined;
+}
+
+function channelRow(name, info) {
+  const connected = isChannelConnected(info);
+  const tone = connected ? "ok" : "warn";
+  const sub = info?.users != null ? `${info.users} users` : (info?.error ?? (connected ? "Connected" : "Not connected"));
+  return `<li class="channel-row channel-${tone}">
+    <span class="channel-row-name">${escapeHtml(titleCase(name))}</span>
+    <span class="channel-row-state">
+      <span class="dot dot-${tone}"></span>
+      ${escapeHtml(sub)}
+    </span>
+  </li>`;
+}
+
+// ─── Summary card ──────────────────────────────────────────────
+
+function renderSummary(data) {
+  const card = $("[data-summary-card]");
+  const body = $("[data-summary-body]");
+  const title = $("[data-summary-title]");
+  if (!card || !body) return;
+  // The base snapshot already has hermes.recentSummaries — use that
+  const summaries = data?.hermes?.recentSummaries || lastSnapshotSummaries();
+  if (!summaries || summaries.length === 0) {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = false;
+  const first = summaries[0];
+  title.textContent = first.topic || "Today's report";
+  body.innerHTML = `<div class="summary-excerpt">${escapeHtml(first.excerpt || "")}</div>
+    <div class="summary-meta">${escapeHtml(first.id)} · ${friendlyAgo(first.createdAt)}</div>`;
+}
+
+function lastSnapshotSummaries() {
+  // Snapshot is in window.__SNAP__ if we ever cache it; otherwise probe /api/snapshot.json once.
+  return null;
+}
+
+$("[data-summary-toggle]")?.addEventListener("click", () => {
+  const card = $("[data-summary-card]");
+  const btn = $("[data-summary-toggle]");
+  const expanded = card.classList.toggle("expanded");
+  btn.setAttribute("aria-expanded", String(expanded));
+});
+
+// Read base snapshot once to populate summary from existing data
+async function seedSummary() {
+  try {
+    const r = await fetch("/api/snapshot.json", { cache: "no-store" });
+    if (!r.ok) return;
+    const snap = await r.json();
+    const sums = snap?.agents?.hermes?.recentSummaries || [];
+    if (sums.length > 0) {
+      const card = $("[data-summary-card]");
+      const body = $("[data-summary-body]");
+      const title = $("[data-summary-title]");
+      if (!card || !body) return;
+      card.hidden = false;
+      title.textContent = sums[0].topic || "Today's report";
+      body.innerHTML = `<div class="summary-excerpt">${escapeHtml(sums[0].excerpt || "")}</div>
+        <div class="summary-meta">${escapeHtml(sums[0].id)} · ${friendlyAgo(sums[0].createdAt)}</div>`;
+    }
+  } catch {}
+}
+seedSummary();
+
+// ─── Activity feed ─────────────────────────────────────────────
+
+function renderActivityFeed(items) {
+  const list = $("[data-activity-list]");
+  const meta = $("[data-activity-meta]");
+  if (!list) return;
+  if (items.length === 0) {
+    list.innerHTML = `<li class="activity-empty">No agent heartbeats yet.</li>`;
+    if (meta) meta.textContent = "0 events";
+    return;
+  }
+  if (meta) meta.textContent = `Last ${items.length} ${items.length === 1 ? "event" : "events"}`;
+  list.innerHTML = items
+    .map((it) => {
+      const dot = it.stuck ? "bad" : it.status === "running" ? "warn" : "ok";
+      const stuckMark = it.stuck ? `<span class="activity-stuck">stuck</span>` : "";
+      return `<li class="activity-row">
+        <span class="dot dot-${dot}"></span>
+        <span class="activity-agent">${escapeHtml(it.agentName)}</span>
+        <span class="activity-arrow">→</span>
+        <span class="activity-role">${escapeHtml(it.role)}</span>
+        ${stuckMark}
+        <span class="activity-age">${it.lastHeartbeatAt ? friendlyAgo(it.lastHeartbeatAt) : "—"}</span>
+      </li>`;
+    })
+    .join("");
+}
+
+// ─── Agent roster (Agents tab) ─────────────────────────────────
+
+function renderAgentRoster(roster) {
+  const grid = $("[data-agent-roster]");
+  const meta = $("[data-roster-meta]");
+  if (!grid) return;
+  if (roster.length === 0) {
+    grid.innerHTML = `<article class="roster-empty">No Paperclip agents on this company yet.</article>`;
+    if (meta) meta.textContent = "0 agents";
+    return;
+  }
+  if (meta) meta.textContent = `${roster.length} ${roster.length === 1 ? "agent" : "agents"}`;
+  grid.innerHTML = roster
+    .map((a) => {
+      const tone = a.stuck ? "bad" : a.status === "running" ? "warn" : a.status === "paused" ? "dim" : "ok";
+      const live = !a.stuck && a.ageSec != null && a.ageSec < 120;
+      const dotMarkup = live
+        ? `<span class="dot dot-${tone} dot-live"><span class="dot-pulse"></span></span>`
+        : `<span class="dot dot-${tone}"></span>`;
+      const budgetBar = a.budgetMonthlyCents > 0
+        ? `<div class="roster-meter" aria-label="Budget ${a.budgetPct.toFixed(0)}% used"><span class="roster-meter-fill" style="width:${Math.min(100, a.budgetPct)}%"></span></div>`
+        : "";
+      return `<article class="roster-tile tone-${tone}" aria-label="${escapeHtml(a.name)} ${escapeHtml(a.role)}, status ${escapeHtml(a.status)}">
+        <header class="roster-head">
+          ${dotMarkup}
+          <span class="roster-name">${escapeHtml(a.name)}</span>
+          <span class="roster-role">${escapeHtml(a.role)}</span>
+        </header>
+        <div class="roster-meta">
+          ${a.lastHeartbeatAt ? `<span>Pulse ${friendlyAgo(a.lastHeartbeatAt)}</span>` : `<span class="dim">No pulse yet</span>`}
+          ${a.model ? `<span class="roster-model mono" title="${escapeHtml(a.model)}">${escapeHtml(a.model)}</span>` : ""}
+        </div>
+        <div class="roster-cost">
+          <span class="roster-cost-amount tabnum">${fmtDollars(a.spentMonthlyCents / 100)}</span>
+          <span class="roster-cost-label">MTD</span>
+        </div>
+        ${budgetBar}
+      </article>`;
+    })
+    .join("");
+}
+
+// ─── Failed crons ─────────────────────────────────────────────
+
+function renderFailedCrons(failed) {
+  const section = $("[data-failed-crons-section]");
+  const list = $("[data-failed-crons-list]");
+  const meta = $("[data-failed-crons-meta]");
+  if (!section || !list) return;
+  if (failed.length === 0) {
+    section.hidden = true;
+    return;
+  }
+  section.hidden = false;
+  if (meta) meta.textContent = `${failed.length} failing`;
+  list.innerHTML = failed
+    .map((j) => `<li class="failed-cron-row">
+      <span class="dot dot-bad"></span>
+      <span class="failed-cron-name mono">${escapeHtml(j.name || j.id)}</span>
+      <span class="failed-cron-detail">exit ${j.last_exit_code} · ${j.last_run ? friendlyAgo(j.last_run) : "—"}</span>
+    </li>`)
+    .join("");
+}
+
+// ─── Firewall + SSH keys ──────────────────────────────────────
+
+function renderFirewall(fw) {
+  const card = $("[data-firewall-card]");
+  const count = $("[data-firewall-rule-count]");
+  const meta = $("[data-firewall-meta]");
+  const viewBtn = $("[data-firewall-view]");
+  if (!card) return;
+  if (!fw) {
+    if (count) count.textContent = "—";
+    if (meta) meta.textContent = "No firewall group attached.";
+    if (viewBtn) viewBtn.hidden = true;
+    return;
+  }
+  const rules = fw.rules || [];
+  if (count) count.textContent = String(rules.length);
+  if (meta) meta.textContent = `${rules.length} rule${rules.length === 1 ? "" : "s"} · ${fw.is_synced === false ? "not synced" : "synced"}`;
+  if (viewBtn) viewBtn.hidden = rules.length === 0;
+}
+
+function renderSshKeys(keys) {
+  const list = $("[data-ssh-keys-list]");
+  const count = $("[data-ssh-count]");
+  if (!list) return;
+  if (count) count.textContent = String(keys.length);
+  if (keys.length === 0) {
+    list.innerHTML = `<li class="ssh-empty">No SSH keys on record.</li>`;
+    return;
+  }
+  list.innerHTML = keys
+    .map((k) => `<li class="ssh-row">
+      <span class="ssh-name mono">${escapeHtml(k.name)}</span>
+      <span class="ssh-fingerprint mono dim">${escapeHtml((k.fingerprint || k.key || "").slice(0, 24))}…</span>
+    </li>`)
+    .join("");
+}
+
+// ─── Company switcher ─────────────────────────────────────────
+
+function renderCompanySwitcher(companies, activeId) {
+  const wrap = $("[data-company-switcher]");
+  const label = $("[data-company-label]");
+  const menu = $("[data-company-menu]");
+  if (!wrap) return;
+  if (companies.length <= 1) {
+    if (companies.length === 1 && label) label.textContent = companies[0].name;
+    if (companies.length === 1) wrap.hidden = false;
+    return;
+  }
+  wrap.hidden = false;
+  const active = companies.find((c) => c.id === activeId) ?? companies[0];
+  if (label) label.textContent = active.name;
+  if (menu) {
+    menu.innerHTML = companies
+      .map((c) => `<li><button type="button" data-company-pick="${c.id}" class="${c.id === activeId ? "active" : ""}">${escapeHtml(c.name)}</button></li>`)
+      .join("");
+  }
+}
+
+$("[data-company-btn]")?.addEventListener("click", () => {
+  const menu = $("[data-company-menu]");
+  const btn = $("[data-company-btn]");
+  if (!menu) return;
+  const open = menu.hidden;
+  menu.hidden = !open;
+  btn.setAttribute("aria-expanded", String(open));
+});
+
+// ─── ⌘K Palette ────────────────────────────────────────────────
+
+let paletteOpen = false;
+const palette = $("[data-palette]");
+const paletteInput = $("[data-palette-input]");
+const paletteResults = $("[data-palette-results]");
+
+function openPalette() {
+  if (!palette) return;
+  paletteOpen = true;
+  palette.hidden = false;
+  palette.style.display = "";
+  setTimeout(() => paletteInput?.focus(), 30);
+}
+function closePalette() {
+  if (!palette) return;
+  paletteOpen = false;
+  palette.hidden = true;
+  palette.style.display = "none";
+  if (paletteInput) paletteInput.value = "";
+  if (paletteResults) paletteResults.innerHTML = "";
+}
+// Force-close on initial load in case CSS hasn't applied yet (cached old version).
+closePalette();
+
+$("[data-palette-open]")?.addEventListener("click", openPalette);
+$("[data-palette-backdrop]")?.addEventListener("click", closePalette);
+
+window.addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+    e.preventDefault();
+    paletteOpen ? closePalette() : openPalette();
+  } else if (e.key === "Escape") {
+    if (paletteOpen || (palette && !palette.hidden)) {
+      e.preventDefault();
+      closePalette();
+    }
+  }
+}, true);
+
+// Esc key on the palette window itself (handles focus-trapped state)
+palette?.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    e.preventDefault();
+    e.stopPropagation();
+    closePalette();
+  }
+});
+
+// Esc button inside the palette row
+$$(".palette-kbd").forEach((kbd) => {
+  kbd.style.cursor = "pointer";
+  kbd.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closePalette();
+  });
+});
+
+let paletteTimer = null;
+paletteInput?.addEventListener("input", () => {
+  if (paletteTimer) clearTimeout(paletteTimer);
+  paletteTimer = setTimeout(runPaletteSearch, 200);
+});
+
+async function runPaletteSearch() {
+  const q = paletteInput?.value?.trim();
+  if (!q) {
+    if (paletteResults) paletteResults.innerHTML = "";
+    return;
+  }
+  paletteResults.innerHTML = `<li class="palette-loading">Searching…</li>`;
+  // Local search across heavy data
+  const local = localSearch(q);
+  if (local.length > 0) {
+    paletteResults.innerHTML = local
+      .map((r) => `<li class="palette-result palette-${r.kind}"><span class="palette-result-kind">${escapeHtml(r.kind)}</span><span class="palette-result-label">${escapeHtml(r.label)}</span><span class="palette-result-meta">${escapeHtml(r.meta || "")}</span></li>`)
+      .join("");
+  } else {
+    paletteResults.innerHTML = `<li class="palette-empty">No matches in current view.</li>`;
+  }
+}
+
+function localSearch(q) {
+  if (!lastHeavy) return [];
+  const ql = q.toLowerCase();
+  const out = [];
+  for (const a of lastHeavy.agentRoster || []) {
+    if (a.name.toLowerCase().includes(ql) || a.role.toLowerCase().includes(ql)) {
+      out.push({ kind: "agent", label: a.name, meta: a.role });
+    }
+  }
+  for (const hb of lastHeavy.heartbeats || []) {
+    if (hb.agentName.toLowerCase().includes(ql)) {
+      out.push({ kind: "run", label: hb.agentName, meta: hb.status });
+    }
+  }
+  for (const al of lastHeavy.alerts || []) {
+    if (al.title.toLowerCase().includes(ql)) {
+      out.push({ kind: "alert", label: al.title, meta: al.severity });
+    }
+  }
+  return out.slice(0, 12);
+}
+
+// ─── Helpers ───────────────────────────────────────────────────
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function titleCase(s) {
+  return String(s ?? "").replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+}
+
+// ─── Pull to refresh ───────────────────────────────────────────
+
+let touchStartY = 0;
+let pulling = false;
+const hint = $("[data-refresh-hint]");
+
+window.addEventListener("touchstart", (e) => {
+  if (window.scrollY <= 0) {
+    touchStartY = e.touches[0].clientY;
+    pulling = true;
+  } else {
+    pulling = false;
+  }
+}, { passive: true });
+
+window.addEventListener("touchmove", (e) => {
+  if (!pulling || !hint) return;
+  const delta = e.touches[0].clientY - touchStartY;
+  if (delta > 30) hint.classList.add("show");
+  if (delta > 80) hint.classList.add("ready");
+}, { passive: true });
+
+window.addEventListener("touchend", () => {
+  if (!hint) return;
+  if (hint.classList.contains("ready")) {
+    hint.classList.add("spinning");
+    Promise.all([pollSnapshot(true), pollHeavy(true)]).finally(() => {
+      setTimeout(() => {
+        hint.classList.remove("show", "ready", "spinning");
+      }, 700);
+    });
+  } else {
+    hint.classList.remove("show", "ready");
+  }
+  pulling = false;
+});
+
+// ─── Install prompt ────────────────────────────────────────────
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const card = $("[data-install-card]");
+  if (card) card.hidden = false;
+  if (!sessionStorage.getItem("install-toast-dismissed")) {
+    const toast = $("[data-install-toast]");
+    if (toast) toast.hidden = false;
+  }
+});
+
+$("[data-install-btn]")?.addEventListener("click", triggerInstall);
+$("[data-install-confirm]")?.addEventListener("click", triggerInstall);
+$("[data-install-dismiss]")?.addEventListener("click", () => {
+  $("[data-install-toast]")?.setAttribute("hidden", "");
+  sessionStorage.setItem("install-toast-dismissed", "1");
+});
+
+async function triggerInstall() {
+  if (!deferredInstallPrompt) return;
+  $("[data-install-toast]")?.setAttribute("hidden", "");
+  deferredInstallPrompt.prompt();
+  const choice = await deferredInstallPrompt.userChoice;
+  if (choice.outcome === "accepted") {
+    $("[data-install-card]")?.setAttribute("hidden", "");
+  }
+  deferredInstallPrompt = null;
+}
+
+window.addEventListener("appinstalled", () => {
+  $("[data-install-card]")?.setAttribute("hidden", "");
+  $("[data-install-toast]")?.setAttribute("hidden", "");
+});
+
+// ─── Theme toggle ──────────────────────────────────────────────
+
+const themeBtn = $("[data-theme-toggle]");
+function currentTheme() {
+  return document.documentElement.getAttribute("data-theme") || "dark";
+}
+function setTheme(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  try { localStorage.setItem("console-theme", t); } catch {}
+  const meta = document.querySelector('meta[name="theme-color"]:not([media])');
+  const dark = "#0a0807", light = "#f6f0e6";
+  if (meta) meta.setAttribute("content", t === "light" ? light : dark);
+}
+themeBtn?.addEventListener("click", () => {
+  setTheme(currentTheme() === "dark" ? "light" : "dark");
+});
+const mql = window.matchMedia?.("(prefers-color-scheme: light)");
+mql?.addEventListener?.("change", (e) => {
+  try {
+    if (!localStorage.getItem("console-theme")) {
+      setTheme(e.matches ? "light" : "dark");
+    }
+  } catch {}
+});
+
+// ─── Standalone-mode helpers ───────────────────────────────────
+
+const isStandalone =
+  window.matchMedia?.("(display-mode: standalone)").matches ||
+  window.navigator.standalone === true;
+if (isStandalone) document.body.classList.add("standalone");

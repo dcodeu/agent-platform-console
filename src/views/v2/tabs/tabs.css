@@ -1,0 +1,246 @@
+/* Shared chrome for tab content (KPI rows, tables, lists).
+   Lives in this file so each tab component just imports it once and
+   composes existing tile / panel primitives. */
+
+/* ─── KPI ROW (1–4 stat tiles laid out horizontally) ──────── */
+.y2-kpi-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+@media (min-width: 720px) {
+  .y2-kpi-row {
+    grid-template-columns: repeat(var(--y2-kpi-row-cols, 4), 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .y2-kpi-row {
+    gap: var(--space-sm);
+  }
+}
+
+/* ─── DATA SECTION (table or list wrapped in tile chrome) ── */
+.y2-data-section {
+  background: var(--bg-1);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.y2-data-section-h {
+  padding: 10px 13px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--rule);
+}
+.y2-data-section-h h3 {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.y2-data-section-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.y2-data-section-b {
+  padding: 0;
+}
+
+/* ─── COMPACT TABLE ────────────────────────────────────────── */
+.y2-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.y2-table thead th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--fg-3);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 8px 13px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--bg-1);
+}
+.y2-table tbody td {
+  padding: 10px 13px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--fg);
+  vertical-align: middle;
+}
+.y2-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.y2-table tbody tr:hover td {
+  background: var(--bg-2);
+}
+.y2-table td.y2-table-num {
+  text-align: right;
+  font-family: var(--mono);
+  color: var(--fg-2);
+}
+.y2-table td.y2-table-dim {
+  color: var(--fg-3);
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+/* ─── INLINE STATE PILL (Drained / Idle / Down etc) ──────── */
+.y2-pill-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--bg-2);
+  border: 1px solid var(--rule);
+  color: var(--fg-2);
+}
+.y2-pill-state--ok {
+  color: var(--accent);
+  border-color: var(--accent-line);
+  background: var(--accent-bg);
+}
+.y2-pill-state--warn {
+  color: var(--attn);
+  border-color: var(--attn-line);
+  background: var(--attn-bg);
+}
+.y2-pill-state--down {
+  color: var(--alert);
+  border-color: var(--alert);
+  background: var(--alert-bg);
+}
+
+/* ─── ACTIVITY LIST ────────────────────────────────────────── */
+.y2-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.y2-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 13px;
+  border-bottom: 1px solid var(--rule);
+}
+.y2-list li:last-child {
+  border-bottom: 0;
+}
+.y2-list-primary {
+  font-size: 12.5px;
+  color: var(--fg);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.y2-list-primary-name {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.y2-list-primary-sub {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.y2-list-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  flex-shrink: 0;
+}
+
+/* ─── CODEX POOL — BIG VARIANT ─────────────────────────────── */
+.y2-pool-big {
+  background: var(--bg-1);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 18px 18px 14px;
+}
+.y2-pool-big-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.y2-pool-big-h h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.y2-pool-big-sub {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.y2-pool-big-grid {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  gap: 8px;
+}
+@media (max-width: 720px) {
+  .y2-pool-big-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+.y2-pool-big-w {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.y2-pool-big-sq {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-bg);
+}
+.y2-pool-big-sq.is-quar {
+  background: var(--alert);
+  box-shadow: 0 0 6px var(--alert-bg);
+}
+.y2-pool-big-w-id {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ─── PLACEHOLDER (graceful "no data yet" hint) ───────────── */
+.y2-placeholder {
+  padding: 18px 16px;
+  text-align: center;
+  color: var(--fg-3);
+  font-size: 12px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}

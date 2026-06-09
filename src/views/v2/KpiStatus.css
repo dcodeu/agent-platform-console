@@ -1,0 +1,50 @@
+/* ─── KPI STATUS ────────────────────────────────────────── */
+.y2-k-status .y2-tile-b {
+  padding: 14px 16px;
+}
+.y2-k-status-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.y2-k-status-pulse {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-bg);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  position: relative;
+}
+.y2-k-status-pulse::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent);
+  animation: y2-pulse 2s ease-in-out infinite;
+}
+.y2-k-status-label {
+  display: grid;
+}
+.y2-k-status-big {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--accent);
+  line-height: 1.1;
+}
+.y2-k-status-ct {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-3);
+}
+.y2-k-status-sub {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+  margin-top: 10px;
+  line-height: 1.5;
+}
