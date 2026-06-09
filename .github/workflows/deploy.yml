@@ -1,0 +1,33 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H 72.60.27.242 >> ~/.ssh/known_hosts
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Pull latest and restart
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no dj@72.60.27.242 '
+            set -e
+            cd /opt/agent-platform/apps/console
+            git fetch origin
+            git reset --hard origin/main
+            npm ci --prefer-offline
+            # no build step detected in package.json
+            sudo systemctl restart agent-platform-console.service
+            systemctl is-active agent-platform-console.service
+          '
