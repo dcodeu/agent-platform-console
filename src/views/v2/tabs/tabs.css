@@ -20,15 +20,28 @@
 }
 
 /* ─── DATA SECTION (table or list wrapped in tile chrome) ── */
+.y2-section {
+  background: var(--bg-glass);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border: var(--rule-glass);
+  transition: border-color 0.2s ease;
+}
+.y2-section:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
 .y2-data-section {
   background: var(--bg-glass);
-  border: var(--rule-glass-hi);
+  border: var(--rule-glass);
   border-radius: 12px;
   box-shadow: var(--shadow-glass);
   overflow: hidden;
   backdrop-filter: var(--blur-glass);
   -webkit-backdrop-filter: var(--blur-glass);
-  transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
+  transition: border-color 0.2s ease;
+}
+.y2-data-section:hover {
+  border-color: rgba(255, 255, 255, 0.2);
 }
 .y2-data-section-h {
   padding: 10px 13px;
@@ -182,14 +195,17 @@
 /* ─── CODEX POOL — BIG VARIANT ─────────────────────────────── */
 .y2-pool-big {
   background: var(--bg-glass);
-  border: var(--rule-glass-hi);
+  border: var(--rule-glass);
   border-radius: 12px;
   box-shadow: var(--shadow-glass);
   overflow: hidden;
   backdrop-filter: var(--blur-glass);
   -webkit-backdrop-filter: var(--blur-glass);
-  transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
+  transition: border-color 0.2s ease;
   padding: 18px 18px 14px;
+}
+.y2-pool-big:hover {
+  border-color: rgba(255, 255, 255, 0.2);
 }
 .y2-pool-big-h {
   display: flex;
