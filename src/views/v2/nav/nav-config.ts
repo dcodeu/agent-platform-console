@@ -36,7 +36,10 @@ export const NAV: readonly NavCategory[] = [
     key: "cockpit",
     label: "Cockpit",
     icon: "layout-dashboard",
-    subs: [{ tab: "overview", label: "Overview", icon: "layout-dashboard" }],
+    subs: [
+      { tab: "overview", label: "Overview", icon: "layout-dashboard" },
+      { tab: "noc", label: "NOC", icon: "radio" },
+    ],
   },
   {
     key: "observability",

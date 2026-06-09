@@ -182,16 +182,47 @@ export function NocTab() {
                     <feMergeNode in="SourceGraphic" />
                   </feMerge>
                 </filter>
+                <filter id="noc-pulse-glow" x="-80%" y="-80%" width="260%" height="260%">
+                  <feGaussianBlur stdDeviation="1.4" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
               </defs>
-              {nodes.map((node, index) => (
-                <path
-                  key={node.id}
-                  className={`noc-link noc-link-${node.state}`}
-                  d={`M 50 50 C ${50 + (node.x - 50) * 0.24} ${50}, ${node.x} ${50 + (node.y - 50) * 0.24}, ${node.x} ${node.y}`}
-                  style={{ animationDelay: `${index * -0.55}s` }}
-                  filter="url(#noc-glow)"
-                />
-              ))}
+              {nodes.map((node, index) => {
+                const pathD = `M 50 50 C ${50 + (node.x - 50) * 0.24} ${50}, ${node.x} ${50 + (node.y - 50) * 0.24}, ${node.x} ${node.y}`;
+                const dur = node.state === "syncing" ? 2.8 : 1.9;
+                const pulseColor =
+                  node.state === "warning" ? "rgba(255,186,75,0.95)" :
+                  node.state === "syncing"  ? "rgba(110,214,255,0.9)" :
+                                              "rgba(78,255,230,0.95)";
+                return (
+                  <g key={node.id}>
+                    <path
+                      id={`noc-path-${node.id}`}
+                      className={`noc-link noc-link-${node.state}`}
+                      d={pathD}
+                      style={{ animationDelay: `${index * -0.55}s` }}
+                      filter="url(#noc-glow)"
+                    />
+                    {([0, 0.38, 0.76] as const).map((frac, i) => (
+                      <circle key={i} r="1.3" fill={pulseColor} filter="url(#noc-pulse-glow)">
+                        <animateMotion
+                          dur={`${dur}s`}
+                          begin={`${(frac * dur).toFixed(2)}s`}
+                          repeatCount="indefinite"
+                          keyPoints="0;1"
+                          keyTimes="0;1"
+                          calcMode="linear"
+                        >
+                          <mpath href={`#noc-path-${node.id}`} />
+                        </animateMotion>
+                      </circle>
+                    ))}
+                  </g>
+                );
+              })}
             </svg>
 
             <div className={`noc-hub noc-node-${hubState}`}>
