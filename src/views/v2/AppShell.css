@@ -16,6 +16,13 @@
   z-index: 30;
   padding-top: var(--safe-top);
 }
+.y2-subnav {
+  background: var(--bg-glass);
+  border-bottom: var(--rule-glass);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
+}
 .y2-hamburger {
   width: 36px;
   height: 36px;
@@ -103,11 +110,6 @@
   padding: var(--space-md) var(--space-md)
           calc(var(--bnav-h) + var(--safe-bottom) + var(--space-lg));
   gap: var(--space-md);
-  background: var(--bg-glass);
-  border-top: var(--rule-glass);
-  backdrop-filter: var(--blur-glass);
-  -webkit-backdrop-filter: var(--blur-glass);
-  transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
 }
 
 /* ─── BREAKPOINTS ──────────────────────────────────────── */

@@ -40,20 +40,20 @@
 
   --viz-dim:     oklch(0.68 0.040 60);
 
-  /* Glass cockpit primitives: translucent charcoal, subtle rules, no gradients. */
-  --glass-bg: rgba(20, 20, 20, 0.75);
-  --glass-blur: blur(12px);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --lume-accent: drop-shadow(0 0 4px var(--accent));
-  --motion-fast: 0.2s ease-in-out;
-
-  /* Back-compat aliases for existing glass chrome. */
-  --bg-glass: var(--glass-bg);
+  /* Glass cockpit primitives: translucent charcoal, saturated blur, subtle high-end rules. */
+  --bg-glass: rgba(18, 18, 18, 0.72);
   --bg-glass-hi: rgba(30, 30, 30, 0.85);
-  --blur-glass: var(--glass-blur);
-  --rule-glass: 1px solid var(--glass-border);
+  --blur-glass: blur(20px) saturate(160%);
+  --rule-glass: 1px solid rgba(255, 255, 255, 0.08);
   --rule-glass-hi: 1px solid rgba(255, 255, 255, 0.15);
   --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --glass-bg: var(--bg-glass);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: var(--blur-glass);
+  --lume-accent: drop-shadow(0 0 7px oklch(0.82 0.110 195 / 0.42));
+  --lume-attn: drop-shadow(0 0 7px oklch(0.78 0.095 35 / 0.36));
+  --lume-alert: drop-shadow(0 0 8px oklch(0.70 0.190 25 / 0.42));
+  --motion-fast: 0.2s ease;
 
   --sans:'Inter', system-ui, -apple-system, sans-serif;
   --mono:'IBM Plex Mono', ui-monospace, monospace;
