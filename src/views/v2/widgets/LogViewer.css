@@ -1,0 +1,83 @@
+.lv {
+  max-height: 360px;
+  overflow: auto;
+  display: grid;
+  background: color-mix(in srgb, var(--bg-0) 78%, transparent);
+}
+
+.lv-row {
+  display: grid;
+  grid-template-columns: 74px auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.lv-row:last-child {
+  border-bottom: 0;
+}
+
+.lv-row:hover {
+  background: var(--bg-2);
+}
+
+.lv-row-warn {
+  background: color-mix(in srgb, var(--warn, #f4b860) 8%, transparent);
+}
+
+.lv-row-critical {
+  background: color-mix(in srgb, var(--attn) 10%, transparent);
+}
+
+.lv-ts {
+  padding-top: 2px;
+  color: var(--fg-3);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lv-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.lv-title {
+  color: var(--fg);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.lv-detail {
+  overflow: hidden;
+  color: var(--fg-3);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .lv-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .lv-ts {
+    grid-column: 1;
+  }
+
+  .lv-row > .pill {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .lv-copy {
+    grid-column: 1 / -1;
+  }
+}

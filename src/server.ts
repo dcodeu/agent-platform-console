@@ -349,19 +349,21 @@ app.get("/api/companies", async (c) => {
   return c.json({ companies: heavy.companies, activeCompanyId: heavy.activeCompanyId });
 });
 
-app.get("/api/stream", (c) => streamSseHandler(c));
-
-app.get("/api/stream/stats", (c) => c.json({ subscribers: subscriberCount() }));
-
 app.get("/api/logs/:container", (c) => {
   const container = c.req.param("container");
   if (!/^[a-zA-Z0-9_.-]+$/.test(container)) return c.text("invalid container", 400);
+
+  c.header("Content-Type", "text/plain; charset=utf-8");
+  c.header("Cache-Control", "no-cache, no-transform");
+  c.header("X-Accel-Buffering", "no");
 
   return stream(c, async (out) => {
     const proc = spawn("docker", ["logs", "--tail", "100", "-f", container]);
     proc.stdout.on("data", (data) => void out.write(data));
     proc.stderr.on("data", (data) => void out.write(data));
-    c.req.raw.signal.addEventListener("abort", () => proc.kill(), { once: true });
+    out.onAbort(() => {
+      proc.kill();
+    });
     await new Promise<void>((resolve) => {
       proc.once("close", () => resolve());
       c.req.raw.signal.addEventListener("abort", () => resolve(), { once: true });
@@ -369,11 +371,43 @@ app.get("/api/logs/:container", (c) => {
   });
 });
 
+app.get("/api/stream", (c) => streamSseHandler(c));
+
+app.get("/api/stream/stats", (c) => c.json({ subscribers: subscriberCount() }));
+
 let lastAlertIds = new Set<string>();
-let lastResourceAlertIds = new Set<string>();
 let lastHeartbeatStates = new Map<string, string>();
+let ssePollCycle = 0;
+let memCriticalOpen = false;
+
 setInterval(async () => {
+  ssePollCycle += 1;
+
   try {
+    const snap = await getSnapshot();
+    const memPercent =
+      "memPercent" in snap.local
+        ? Number(snap.local.memPercent)
+        : (snap.local.memUsedBytes / Math.max(1, snap.local.memTotalBytes)) * 100;
+
+    if (memPercent > 90) {
+      const alert = {
+        id: "resource:mem:critical",
+        severity: "critical",
+        kind: "local_resource",
+        title: `Memory at ${Math.round(memPercent)}%`,
+        detail: `${snap.local.hostname} · sampled from 20s local snapshot`,
+        sinceMs: snap.generatedAt,
+      };
+      if (!memCriticalOpen) broadcast("alert.created", alert);
+      memCriticalOpen = true;
+    } else if (memCriticalOpen) {
+      broadcast("alert.resolved", { id: "resource:mem:critical" });
+      memCriticalOpen = false;
+    }
+
+    if (ssePollCycle % 3 !== 0) return;
+
     const heavy = await getHeavySnapshot(true);
     const currentIds = new Set(heavy.alerts.map((a) => a.id));
     for (const a of heavy.alerts) {
@@ -403,26 +437,9 @@ setInterval(async () => {
       budgetPct: heavy.costs.budgetPct,
     });
   } catch (e) {
-    console.error("[sse-heavy-poll]", (e as Error).message);
+    console.error("[sse-poll]", (e as Error).message);
   }
-}, 60_000);
-
-setInterval(async () => {
-  try {
-    const snap = await getSnapshot();
-    const resourceAlerts = buildResourceAlerts(snap);
-    const currentIds = new Set(resourceAlerts.map((a) => a.id));
-    for (const a of resourceAlerts) {
-      if (!lastResourceAlertIds.has(a.id)) broadcast("alert.created", a);
-    }
-    for (const oldId of lastResourceAlertIds) {
-      if (!currentIds.has(oldId)) broadcast("alert.resolved", { id: oldId });
-    }
-    lastResourceAlertIds = currentIds;
-  } catch (e) {
-    console.error("[sse-light-poll]", (e as Error).message);
-  }
-}, 10_000);
+}, 20_000);
 
 function buildResourceAlerts(snap: Awaited<ReturnType<typeof getSnapshot>>) {
   const memPct = (snap.local.memUsedBytes / Math.max(1, snap.local.memTotalBytes)) * 100;

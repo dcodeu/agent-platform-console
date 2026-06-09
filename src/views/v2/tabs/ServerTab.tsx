@@ -12,6 +12,7 @@ import { usePromInstant, usePromQuery, usePgQuery } from "../widgets/useNativeDa
 import { WidgetCard } from "../widgets/WidgetCard.tsx";
 import { NativeStat } from "../widgets/NativeStat.tsx";
 import { LineChart } from "../widgets/LineChart.tsx";
+import { LogViewer } from "../widgets/LogViewer.tsx";
 import { StatusPill, type PillState } from "../widgets/StatusPill.tsx";
 import { EmptyState } from "../widgets/EmptyState.tsx";
 
@@ -319,6 +320,10 @@ export function ServerTab() {
           </WidgetCard>
         </section>
       ) : null}
+
+      <section className="sv-stream" aria-label="Real-time server stream">
+        <LogViewer />
+      </section>
     </>
   );
 }

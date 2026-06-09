@@ -1,12 +1,14 @@
 .sv-pulse,
 .sv-charts,
-.sv-pg {
+.sv-pg,
+.sv-stream {
   display: grid;
   gap: var(--space-sm);
 }
 .sv-pulse { grid-template-columns: 1fr 1fr; margin-bottom: var(--space-md); }
 .sv-charts { grid-template-columns: 1fr; margin-bottom: var(--space-md); }
 .sv-pg { grid-template-columns: 1fr 1fr; margin-bottom: var(--space-md); }
+.sv-stream { margin-top: var(--space-md); }
 
 @media (min-width: 720px) {
   .sv-pulse { grid-template-columns: repeat(3, 1fr); }
