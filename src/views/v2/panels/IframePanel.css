@@ -1,10 +1,13 @@
 /* ─── IFRAME PANEL (Grafana /d-solo embed) ─────────────── */
 .y2-panel {
   /* Same chrome as .y2-tile but allow body to be a flush iframe */
-  background: var(--bg-1);
-  border: 1px solid var(--rule);
+  background: var(--bg-glass);
+  border: var(--rule-glass);
   border-radius: 12px;
   overflow: hidden;
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -15,7 +18,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: var(--rule-glass);
   flex-shrink: 0;
 }
 .y2-panel-h h3 {
@@ -52,7 +55,7 @@
 }
 .y2-panel-b {
   position: relative;
-  background: var(--bg-2);
+  background: rgba(255, 255, 255, 0.04);
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -76,7 +79,7 @@
 .y2-panel-skel {
   position: absolute;
   inset: 0;
-  background: var(--bg-2);
+  background: rgba(255, 255, 255, 0.04);
   overflow: hidden;
 }
 .y2-panel-skel::after {

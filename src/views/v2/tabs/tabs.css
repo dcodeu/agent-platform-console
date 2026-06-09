@@ -21,10 +21,14 @@
 
 /* ─── DATA SECTION (table or list wrapped in tile chrome) ── */
 .y2-data-section {
-  background: var(--bg-1);
-  border: 1px solid var(--rule);
+  background: var(--bg-glass);
+  border: var(--rule-glass-hi);
   border-radius: 12px;
+  box-shadow: var(--shadow-glass);
   overflow: hidden;
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
 }
 .y2-data-section-h {
   padding: 10px 13px;
@@ -32,7 +36,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: var(--rule-glass);
 }
 .y2-data-section-h h3 {
   margin: 0;
@@ -67,12 +71,13 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 8px 13px;
-  border-bottom: 1px solid var(--rule);
-  background: var(--bg-1);
+  border-bottom: var(--rule-glass);
+  background: var(--bg-glass-hi);
 }
 .y2-table tbody td {
+  transition: background var(--motion-fast), color var(--motion-fast);
   padding: 10px 13px;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: var(--rule-glass);
   color: var(--fg);
   vertical-align: middle;
 }
@@ -80,7 +85,7 @@
   border-bottom: 0;
 }
 .y2-table tbody tr:hover td {
-  background: var(--bg-2);
+  background: rgba(255, 255, 255, 0.04);
 }
 .y2-table td.y2-table-num {
   text-align: right;
@@ -95,6 +100,7 @@
 
 /* ─── INLINE STATE PILL (Drained / Idle / Down etc) ──────── */
 .y2-pill-state {
+  transition: color var(--motion-fast), background var(--motion-fast), border-color var(--motion-fast), filter var(--motion-fast), box-shadow var(--motion-fast);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -104,24 +110,27 @@
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  background: var(--bg-2);
-  border: 1px solid var(--rule);
+  background: rgba(255, 255, 255, 0.04);
+  border: var(--rule-glass-hi);
   color: var(--fg-2);
 }
 .y2-pill-state--ok {
   color: var(--accent);
   border-color: var(--accent-line);
   background: var(--accent-bg);
+  filter: var(--lume-accent);
 }
 .y2-pill-state--warn {
   color: var(--attn);
   border-color: var(--attn-line);
   background: var(--attn-bg);
+  filter: var(--lume-attn);
 }
 .y2-pill-state--down {
   color: var(--alert);
   border-color: var(--alert);
   background: var(--alert-bg);
+  filter: var(--lume-alert);
 }
 
 /* ─── ACTIVITY LIST ────────────────────────────────────────── */
@@ -131,12 +140,13 @@
   padding: 0;
 }
 .y2-list li {
+  transition: background var(--motion-fast), border-color var(--motion-fast);
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
   padding: 10px 13px;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: var(--rule-glass);
 }
 .y2-list li:last-child {
   border-bottom: 0;
@@ -171,10 +181,14 @@
 
 /* ─── CODEX POOL — BIG VARIANT ─────────────────────────────── */
 .y2-pool-big {
-  background: var(--bg-1);
-  border: 1px solid var(--rule);
+  background: var(--bg-glass);
+  border: var(--rule-glass-hi);
   border-radius: 12px;
+  box-shadow: var(--shadow-glass);
   overflow: hidden;
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
   padding: 18px 18px 14px;
 }
 .y2-pool-big-h {
@@ -222,10 +236,12 @@
   border-radius: 6px;
   background: var(--accent);
   box-shadow: 0 0 6px var(--accent-bg);
+  filter: var(--lume-accent);
 }
 .y2-pool-big-sq.is-quar {
   background: var(--alert);
-  box-shadow: 0 0 6px var(--alert-bg);
+  box-shadow: 0 0 10px oklch(0.70 0.190 25 / 0.34);
+  filter: var(--lume-alert);
 }
 .y2-pool-big-w-id {
   white-space: nowrap;

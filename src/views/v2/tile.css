@@ -1,9 +1,13 @@
 /* ─── TILE CHROME (shared across KPI + panel tiles) ─────── */
 .y2-tile {
-  background: var(--bg-1);
-  border: 1px solid var(--rule);
+  background: var(--bg-glass);
+  border: var(--rule-glass-hi);
   border-radius: 12px;
+  box-shadow: var(--shadow-glass);
   overflow: hidden;
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
 }
 .y2-tile-h {
   padding: 10px 13px;
@@ -11,7 +15,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: var(--rule-glass);
 }
 .y2-tile-h h3 {
   margin: 0;

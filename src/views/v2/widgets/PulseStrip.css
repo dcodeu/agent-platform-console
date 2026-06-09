@@ -8,8 +8,11 @@
   height: 32px;
   padding: 0 var(--space-md);
   margin: calc(var(--space-md) * -1) calc(var(--space-md) * -1) 0;
-  background: var(--bg-1);
-  border-bottom: 1px solid var(--rule);
+  background: var(--bg-glass);
+  border-bottom: var(--rule-glass);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  transition: background var(--motion-fast), border-color var(--motion-fast);
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -34,7 +37,7 @@
   transform: translateY(-50%);
   width: 1px;
   height: 12px;
-  background: var(--rule);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .y2-pulse-label {

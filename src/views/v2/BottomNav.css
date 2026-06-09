@@ -5,8 +5,11 @@
   right: 0;
   bottom: 0;
   height: var(--bnav-h);
-  background: var(--bg-1);
-  border-top: 1px solid var(--rule);
+  background: var(--bg-glass);
+  border-top: var(--rule-glass);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  transition: background var(--motion-fast), border-color var(--motion-fast);
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   padding-bottom: var(--safe-bottom);
@@ -29,6 +32,11 @@
   cursor: pointer;
   background: transparent;
   border: 0;
+  transition: color var(--motion-fast), filter var(--motion-fast);
+}
+.y2-bnav a:hover,
+.y2-bnav button:hover {
+  color: var(--fg-2);
 }
 .y2-bnav-ic {
   font-size: 18px;
@@ -39,6 +47,7 @@
 .y2-bnav a.on,
 .y2-bnav button.on {
   color: var(--accent);
+  filter: var(--lume-accent);
 }
 .y2-bnav a.on .y2-bnav-ic,
 .y2-bnav button.on .y2-bnav-ic {

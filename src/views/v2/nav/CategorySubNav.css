@@ -2,8 +2,12 @@
 
 .y2-csub {
   height: var(--subnav-h);
-  background: var(--bg-0);
-  border-bottom: 1px solid var(--rule);
+  background: var(--bg-glass);
+  border-bottom: var(--rule-glass);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
   display: flex;
   align-items: center;
   gap: 18px;
@@ -31,7 +35,16 @@
   white-space: nowrap;
   flex-shrink: 0;
   cursor: pointer;
+  transition: color var(--motion-fast), border-color var(--motion-fast), filter var(--motion-fast);
 }
+.y2-csub-tab:hover {
+  color: var(--fg-2);
+}
+.y2-csub-tab.is-active,
+.y2-csub-tab.on {
+  filter: var(--lume-accent);
+}
+
 .y2-csub-tab.is-active,
 .y2-csub-tab.on {
   color: var(--accent);

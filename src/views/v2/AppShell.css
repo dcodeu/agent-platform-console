@@ -1,8 +1,12 @@
 /* ─── TOPBAR ─────────────────────────────────────────────── */
 .y2-topbar {
   height: var(--topbar-h);
-  background: var(--bg-1);
-  border-bottom: 1px solid var(--rule);
+  background: var(--bg-glass);
+  border-bottom: var(--rule-glass);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
   display: flex;
   align-items: center;
   padding: 0 14px;
@@ -19,8 +23,11 @@
   display: grid;
   place-items: center;
   color: var(--fg-2);
-  border: 1px solid var(--rule);
-  background: var(--bg-2);
+  border: var(--rule-glass);
+  background: var(--bg-glass-hi);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  transition: color var(--motion-fast), background var(--motion-fast), border-color var(--motion-fast);
   font: inherit;
   cursor: pointer;
   padding: 0;
@@ -57,9 +64,12 @@
   align-items: center;
   gap: 7px;
   padding: 5px 10px;
-  background: var(--bg-2);
-  border: 1px solid var(--rule);
+  background: var(--bg-glass);
+  border: var(--rule-glass);
   border-radius: 999px;
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  transition: color var(--motion-fast), background var(--motion-fast), border-color var(--motion-fast);
   font-size: 11.5px;
   color: var(--accent);
   font-family: var(--mono);
@@ -69,7 +79,8 @@
   height: 7px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 8px var(--accent);
+  box-shadow: 0 0 10px oklch(0.82 0.110 195 / 0.35);
+  filter: var(--lume-accent);
   animation: y2-pulse 2s ease-in-out infinite;
 }
 .y2-me {
@@ -92,6 +103,11 @@
   padding: var(--space-md) var(--space-md)
           calc(var(--bnav-h) + var(--safe-bottom) + var(--space-lg));
   gap: var(--space-md);
+  background: var(--bg-glass);
+  border-top: var(--rule-glass);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
 }
 
 /* ─── BREAKPOINTS ──────────────────────────────────────── */
@@ -107,8 +123,11 @@
     margin-left: auto;
     align-items: center;
     gap: 8px;
-    background: var(--bg-2);
-    border: 1px solid var(--rule);
+    background: var(--bg-glass-hi);
+    border: var(--rule-glass);
+    backdrop-filter: var(--blur-glass);
+    -webkit-backdrop-filter: var(--blur-glass);
+    transition: color var(--motion-fast), background var(--motion-fast), border-color var(--motion-fast);
     border-radius: 8px;
     padding: 5px 10px;
     min-width: 280px;
@@ -118,7 +137,9 @@
     text-align: left;
   }
   .y2-search:hover {
-    border-color: var(--rule-hi);
+    border: var(--rule-glass-hi);
+    background: var(--bg-glass-hi);
+    box-shadow: var(--shadow-glass);
   }
   .y2-search input {
     background: transparent;

@@ -2,16 +2,20 @@
    coral-tinted error/empty states. */
 
 .w-card {
-  background: var(--bg-1);
-  border: 1px solid var(--rule);
+  background: var(--bg-glass);
+  border: var(--rule-glass-hi);
   border-radius: 12px;
+  box-shadow: var(--shadow-glass);
   overflow: hidden;
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
   display: flex;
   flex-direction: column;
 }
 .w-card.w-card-error {
   border-color: var(--attn-line);
-  background: linear-gradient(0deg, var(--attn-bg), var(--attn-bg)), var(--bg-1);
+  background: var(--bg-glass-hi);
 }
 .w-card-h {
   padding: 10px 13px;
@@ -19,7 +23,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: var(--rule-glass);
 }
 .w-card-h h3 {
   margin: 0;
@@ -61,7 +65,7 @@
 }
 .w-card-f {
   padding: 8px 13px;
-  border-top: 1px solid var(--rule);
+  border-top: var(--rule-glass);
   font-family: var(--mono);
   font-size: 10.5px;
   color: var(--fg-3);

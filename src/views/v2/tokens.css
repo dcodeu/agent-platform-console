@@ -40,6 +40,21 @@
 
   --viz-dim:     oklch(0.68 0.040 60);
 
+  /* Glass cockpit primitives: translucent charcoal, subtle rules, no gradients. */
+  --glass-bg: rgba(20, 20, 20, 0.75);
+  --glass-blur: blur(12px);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --lume-accent: drop-shadow(0 0 4px var(--accent));
+  --motion-fast: 0.2s ease-in-out;
+
+  /* Back-compat aliases for existing glass chrome. */
+  --bg-glass: var(--glass-bg);
+  --bg-glass-hi: rgba(30, 30, 30, 0.85);
+  --blur-glass: var(--glass-blur);
+  --rule-glass: 1px solid var(--glass-border);
+  --rule-glass-hi: 1px solid rgba(255, 255, 255, 0.15);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+
   --sans:'Inter', system-ui, -apple-system, sans-serif;
   --mono:'IBM Plex Mono', ui-monospace, monospace;
 
